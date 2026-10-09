@@ -246,5 +246,5 @@ data/
   published/              self_couplings.txt, fig1/, fig2/, fig3/, wcst/: data of the published figures
   generated/              data computed by the scripts (not under version control)
 assets/                   artwork of the published figures, embedded by the scripts
-figures/                  rendered figures (not under version control)
+figures/                  rendered figures (not under version control).
 ```
