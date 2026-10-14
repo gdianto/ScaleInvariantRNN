@@ -176,6 +176,15 @@ julia scripts/fig4.jl --kde                # panel b with kernel density estimat
 | c | sorted self-couplings before learning; after learning, mean ± std over 50 networks | `wcst/` |
 | d, e | state space of one network (PCA, hysteresis) | artwork; see `scripts/explore_wcst.jl` |
 
+Draft panel (not in the figure): accuracy on the last trial before a rule switch and on the four trials after it
+(switches between two blocks of at least 4 trials), for s-networks (g_b = 0.8) trained with the error signal of the
+paper; during the test each error pulse is halved with probability 0.5 (`run_wcst_switch`). It needs the per-trial
+results of a new run (the published data have none):
+
+```bash
+julia -t 16 scripts/fig4_switch.jl --simulate   # 200 networks, seed 2026 (~5 min) -> data/generated/fig4_switch/
+```
+
 ### Figure 5: heterogeneous s vs heterogeneous τ0
 
 ```bash
@@ -229,6 +238,7 @@ julia scripts/explore_timescales.jl     # or open it in VS Code and run the cell
 ```
 scripts/
   fig1.jl ... fig5.jl     one script per figure
+  fig4_switch.jl          draft panel for Fig. 4: accuracy around a rule switch
   self_couplings.jl       new self-coupling vector (Methods)
   explore_timescales.jl   interactive exploration of Figs. 1-2
   explore_wcst.jl         interactive exploration of the WCST (Figs. 4-5)
@@ -246,5 +256,5 @@ data/
   published/              self_couplings.txt, fig1/, fig2/, fig3/, wcst/: data of the published figures
   generated/              data computed by the scripts (not under version control)
 assets/                   artwork of the published figures, embedded by the scripts
-figures/                  rendered figures (not under version control).
+figures/                  rendered figures (not under version control)
 ```
