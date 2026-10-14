@@ -170,9 +170,10 @@ end
 
 """
 Test period: the closed-loop network responds autonomously; the error signal is given only after a wrong
-response (written into `input`).
+response (written into `input`). `error_weights[:, trial]`, if given, are the error input weights of each trial.
 """
-function run_test!(closed, net, input, W_out, trials, timing, stim, spans, dt; N, n_learned, n_test, context_out, error_sign)
+function run_test!(closed, net, input, W_out, trials, timing, stim, spans, dt; N, n_learned, n_test, context_out, error_sign,
+                   error_weights=nothing)
     (; trial_steps, signal, t0_central, t0_response, t1_response) = timing
     closed.r = net.r
     r_test = zeros(N, length(spans.test[1]:dt:spans.test[end]))
@@ -186,6 +187,7 @@ function run_test!(closed, net, input, W_out, trials, timing, stim, spans, dt; N
         trial = n_learned + k
         steps = stim.first_step[trial]:stim.first_step[trial]+trial_steps-1
         trial_input = input[steps, :]
+        error_weights === nothing || (closed.Jext[:, err] .= error_weights[:, trial])
         pre = ((k - 1) * trial_steps + 1):(t1_response + (k - 1) * trial_steps)
         post = (pre[end] + 1):trial_steps*k
         r_test[:, pre] = simulate!(closed, span_pre; dt, input=trial_input[t0_central:t1_response, :], save_every=1)
@@ -202,7 +204,7 @@ function run_test!(closed, net, input, W_out, trials, timing, stim, spans, dt; N
         end
         r_test[:, post] = simulate!(closed, span_post; dt, input=trial_input[(t1_response+1):end, :], save_every=1)
     end
-    return (; r_test, response, input_test=input[spans.steps_test, :], accuracy=mean(hit_correct),
+    return (; r_test, response, input_test=input[spans.steps_test, :], hit_correct, accuracy=mean(hit_correct),
             accuracy_optimal=mean(hit_optimal), optimal_accuracy=mean(optimal_correct))
 end
 
@@ -243,13 +245,11 @@ function append_results(path, g_context, accuracy, dJ)
 end
 
 """
-    run_wcst(variant, g_context; outdir, verbose=false)
-
-One WCST run with the parameters of the paper, appended to the result files in `outdir`
-(results_wcst, gds_post_wcst, readout_context_wcst, readout_response_wcst, acfm_wcst).
-variant "s": self-couplings of `self_couplings_file()`, τ0 = 0.01 s; "tau": no self-coupling, τ0 in [0.01, 0.05] s.
+Task, inputs and untrained network of one WCST run with the parameters of the paper; variant "s": self-couplings of
+`self_couplings_file()`, τ0 = 0.01 s; "tau": no self-coupling, τ0 in [0.01, 0.05] s. Random draws in the order of
+the published runs.
 """
-function run_wcst(variant, g_context; outdir, verbose=false)
+function wcst_setup(variant, g_context)
     variant in ("s", "tau") || error("variant must be \"s\" or \"tau\"")
     n_values = [2, 2]; n_cards = prod(n_values)
     n_transient, n_learning, n_test = 20, 80, 100
@@ -257,7 +257,7 @@ function run_wcst(variant, g_context; outdir, verbose=false)
     error_magnitude = 1.0; error_sign = false; context_out = true
     trials = generate_trials(n_values, n_trials, 0.2, error_magnitude)
 
-    N, g = 500, 0.4
+    N, g, g_error = 500, 0.4, 1.75
     if variant == "s"
         τ = 0.01; τu = mean(τ)
         self_couplings = readdlm(self_couplings_file(), ',')[:]
@@ -270,11 +270,26 @@ function run_wcst(variant, g_context; outdir, verbose=false)
     timing = trial_timing(τu, dt, n_trials, error_magnitude)
     spans = task_spans(dt, timing.trial_duration, timing.trial_steps, n_transient, n_learning, n_test)
     stim = build_input(trials, timing, n_trials, n_transient + n_learning, n_cards, context_out, error_sign)
-    net = wcst_network(; N, τ, g, self_couplings, n_cards, context_out, g_cards=1.0, g_error=1.75, g_context, g_response=0.0)
-    learn = train_readout!(net, stim.input, spans, dt; β=0.01, method="ridge", context_out, response_feedback_only=false)
+    net = wcst_network(; N, τ, g, self_couplings, n_cards, context_out, g_cards=1.0, g_error, g_context, g_response=0.0)
+    return (; trials, timing, spans, stim, net, N, τu, dt, n_cards, g_error, n_learned=n_transient + n_learning, n_test,
+            context_out, error_sign)
+end
+
+train_wcst!(w) = train_readout!(w.net, w.stim.input, w.spans, w.dt; β=0.01, method="ridge", context_out=w.context_out,
+                                response_feedback_only=false)
+
+"""
+    run_wcst(variant, g_context; outdir, verbose=false)
+
+One WCST run with the parameters of the paper (`wcst_setup`), appended to the result files in `outdir`
+(results_wcst, gds_post_wcst, readout_context_wcst, readout_response_wcst, acfm_wcst).
+"""
+function run_wcst(variant, g_context; outdir, verbose=false)
+    w = wcst_setup(variant, g_context)
+    (; trials, timing, spans, stim, net, N, τu, dt, n_learned, n_test, context_out, error_sign) = w
+    learn = train_wcst!(w)
     (; W_out, closed) = learn
-    test = run_test!(closed, net, stim.input, W_out, trials, timing, stim, spans, dt; N, n_learned=n_transient + n_learning,
-                     n_test, context_out, error_sign)
+    test = run_test!(closed, net, stim.input, W_out, trials, timing, stim, spans, dt; N, n_learned, n_test, context_out, error_sign)
     verbose && println("accuracy $(test.accuracy), accordance with optimal $(test.accuracy_optimal)")
 
     tag = "$(variant)-gb_$g_context"
@@ -294,35 +309,60 @@ function run_wcst(variant, g_context; outdir, verbose=false)
 end
 
 """
+    run_wcst_switch(variant, g_context; p_half=0.0)
+
+One network trained and tested as in `run_wcst` (without the power-law test); during the test each error pulse is
+halved with probability `p_half` (one draw per trial). Returns the responses of the test (1 correct, 0 wrong, one per
+test trial) and the rule (±1) of each test trial. The draws are always made: runs with the same seed differ only in
+p_half, and p_half = 0 gives the test of `run_wcst`.
+"""
+function run_wcst_switch(variant, g_context; p_half=0.0)
+    w = wcst_setup(variant, g_context)
+    (; trials, timing, spans, stim, net, N, dt, n_cards, n_learned, n_test, context_out, error_sign) = w
+    err = n_cards + 1                                                       # error channel
+    halved = rand(length(stim.first_step)) .< p_half
+    learn = train_wcst!(w)
+    error_weights = p_half > 0 ? net.Jext[:, err] .* ifelse.(halved, 0.5, 1.0)' : nothing
+    test = run_test!(learn.closed, net, stim.input, learn.W_out, trials, timing, stim, spans, dt;
+                     N, n_learned, n_test, context_out, error_sign, error_weights)
+    return test.hit_correct, trials.rules_signed[n_learned+1:end]
+end
+
+"""
     run_wcst_sweep(; variants, g_contexts, reps=50, outdir)
 
-`reps` unseeded runs for each network type and g_b, (type, g_b) pairs in parallel threads, merged into
-`outdir` (an empty folder) with the layout of data/published/wcst, together with the self-couplings used.
+`reps` unseeded runs for each network type and g_b, merged into `outdir` (an empty folder) with the layout of
+data/published/wcst, together with the self-couplings used. The runs of each (type, g_b) pair are split into
+chunks so that all threads are used; the chunks run in parallel threads.
 """
 function run_wcst_sweep(; variants=["s", "tau"], g_contexts=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], reps=50, outdir)
     Threads.nthreads() > 1 && BLAS.set_num_threads(1)
-    staging(v, gb) = mkpath(joinpath(outdir, "staging", "$(v)-gb_$(gb)"))
-    jobs = [(v, gb) for v in variants for gb in g_contexts]
-    println("WCST sweep: $(length(jobs)) (network, g_b) pairs x $reps runs on $(Threads.nthreads()) thread(s) -> $outdir")
+    pairs = [(v, gb) for v in variants for gb in g_contexts]
+    nchunks = clamp(cld(Threads.nthreads(), length(pairs)), 1, reps)
+    chunk(c) = (c-1)*reps÷nchunks+1:c*reps÷nchunks
+    staging(v, gb, c) = mkpath(joinpath(outdir, "staging", "$(v)-gb_$(gb)_$c"))
+    jobs = [(v, gb, c) for (v, gb) in pairs for c in 1:nchunks]
+    println("WCST sweep: $(length(pairs)) (network, g_b) pairs x $reps runs ($nchunks chunk(s) per pair) on $(Threads.nthreads()) thread(s) -> $outdir")
     lk = ReentrantLock()
-    Threads.@threads :dynamic for (v, gb) in jobs
-        for k in 1:reps
-            res = run_wcst(v, gb; outdir=staging(v, gb))
+    Threads.@threads :dynamic for (v, gb, c) in jobs
+        for k in chunk(c)
+            res = run_wcst(v, gb; outdir=staging(v, gb, c))
             lock(lk) do
                 @printf("  %-3s g_b=%.1f run %2d/%d: accuracy %.2f, |dJ|/|J0| %.3f\n", v, gb, k, reps, res.accuracy, res.dJ)
             end
         end
     end
+    lines(v, gb, name; skip=0) = reduce(vcat, [readlines(joinpath(staging(v, gb, c), name))[1+skip:end] for c in 1:nchunks])
     for v in variants
         open(joinpath(outdir, "results_wcst_$(v).txt"), "w") do io
             println(io, "gbackContext accuracy_from_optimal dJ_J0")
             for gb in sort(g_contexts)
-                foreach(l -> println(io, l), readlines(joinpath(staging(v, gb), "results_wcst_$(v).txt"))[2:end])
+                foreach(l -> println(io, l), lines(v, gb, "results_wcst_$(v).txt"; skip=1))
             end
         end
         for gb in g_contexts, prefix in ("acfm", "gds_post", "readout_context", "readout_response")
             name = "$(prefix)_wcst_$(v)-gb_$(gb).txt"
-            cp(joinpath(staging(v, gb), name), joinpath(outdir, name))
+            write(joinpath(outdir, name), join(lines(v, gb, name) .* "\n"))
         end
     end
     rm(joinpath(outdir, "staging"); recursive=true)

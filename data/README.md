@@ -68,3 +68,14 @@ One line per run; `<type>` is `s` (s-network) or `tau` (τ0-network), `<g_b>` = 
 
 `scripts/fig4.jl --simulate` computes only the runs of Fig. 4 (s-network, g_b = 0.8); `scripts/fig5.jl --simulate`
 computes the whole sweep.
+
+## fig4_switch/ (`scripts/fig4_switch.jl`, draft panel; generated data only)
+
+One line per network (s-network, g_b = 0.8; during the test each error pulse halved with probability 0.5,
+`run_wcst_switch`), one column per test trial (100).
+
+| file | content |
+|---|---|
+| `hits_wcst_s-gb_0.8-phalf_0.5.txt` | 1 if the response is correct (no error signal) |
+| `rules_wcst_s-gb_0.8.txt` | rule (±1) of each test trial |
+| `self_couplings.txt` | the self-couplings used |
