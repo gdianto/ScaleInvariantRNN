@@ -132,7 +132,6 @@ function figS1(data, out)
         ylim, yticks = limits(λ)
         ax = Axes(fig; left=142.0, right=177.0, top, bottom, xlim, ylim)
         plot!(ax, collect(xlim), [0.0, 0.0]; color="#000000", width=0.4, dash=(1.5, 1.0), cap="butt")
-        row == 1 && text!(fig, ax.left + 1.0, ymm(ax, 0.0) - 1.7, "λ_{1} > 0: chaos")
         for g in gs
             v = λ[data.g .== g]
             x = [g + jitter(k, 0.0035; n=10) for k in eachindex(v)]
