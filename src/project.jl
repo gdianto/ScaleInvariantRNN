@@ -59,8 +59,10 @@ new_data_dir(name) = mkpath(new_data_path(name))
 
 "Output prefix of a figure: --out=PREFIX, or figures/<data source>/name."
 function figure_path(name)
+    out = flagvalue("out", "")
+    isempty(out) || return out
     d = data_dir()
     source = startswith(d, projectdir("data")) ? relpath(d, projectdir("data")) : basename(rstrip(d, '/'))
-    return flagvalue("out", joinpath(mkpath(projectdir("figures", source)), name))
+    return joinpath(mkpath(projectdir("figures", source)), name)
 end
 figures_dir(args...) = mkpath(projectdir("figures", args...))

@@ -329,6 +329,33 @@ function run_wcst_switch(variant, g_context; p_half=0.0)
 end
 
 """
+    run_switch_sweep(dir; p_values, nets, seed, g_b)
+
+`nets` s-networks (network k: seed `seed + k`), each trained once per p and tested with error pulses halved with
+probability p (`run_wcst_switch`); the same networks, tasks and trainings for every p. Writes the responses of the test
+trials for each p (`switch_hits_file`, src/switch.jl) and the rules, one line per network, and the self-couplings used.
+"""
+function run_switch_sweep(dir; p_values, nets, seed, g_b)
+    BLAS.set_num_threads(1)                          # results independent of the number of threads
+    jobs = [(p, k) for p in p_values for k in 1:nets]
+    println("Switch: $nets s-networks (g_b = $g_b) x p = $(join(p_values, ", ")) on $(Threads.nthreads()) thread(s)")
+    res = Vector{Any}(undef, length(jobs))
+    Threads.@threads :dynamic for j in eachindex(jobs)
+        p, k = jobs[j]
+        Random.seed!(seed + k)
+        res[j] = run_wcst_switch("s", g_b; p_half=p)
+    end
+    for p in p_values
+        writedlm(switch_hits_file(dir, p; g_b), reduce(vcat, [Int.(res[j][1])' for j in eachindex(jobs) if jobs[j][1] == p]), ' ')
+    end
+    rules = [res[j][2] for j in eachindex(jobs) if jobs[j][1] == p_values[1]]
+    all(res[j][2] == rules[jobs[j][2]] for j in eachindex(jobs)) || error("the rules differ between the values of p")
+    writedlm(switch_rules_file(dir; g_b), reduce(vcat, [r' for r in rules]), ' ')
+    cp(self_couplings_file(), joinpath(dir, "self_couplings.txt"))
+    println("Data in $dir")
+end
+
+"""
     run_wcst_sweep(; variants, g_contexts, reps=50, outdir)
 
 `reps` unseeded runs for each network type and g_b, merged into `outdir` (an empty folder) with the layout of

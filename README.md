@@ -16,9 +16,12 @@ scale-invariant (power-law) memory, without criticality. The repository covers:
 | 3 | short-term memory: heterogeneous network (hRNN) vs homogeneous network (hom) and echo-state network (esn) | `scripts/fig3.jl` |
 | 4 | Wisconsin Card Sorting Test (WCST): strategy of the heterogeneous network | `scripts/fig4.jl` |
 | 5 | WCST: heterogeneous self-couplings (s-network) vs heterogeneous time constants (τ0-network) | `scripts/fig5.jl` |
+| S1 | the autonomous network relaxes to a fixed point: activity, fixed-point residual, Lyapunov exponents for g around 0.4 | `scripts/figS1.jl` |
+| S2 | WCST: accuracy around a rule switch when the error signal is halved with probability p | `scripts/figS2.jl` |
 
-Each script writes the complete figure (SVG, PDF and PNG) at the published size and layout. By default the figures
-are drawn from the data of the published runs (`data/published/`); with `--simulate` the scripts recompute the data
+Each script writes the complete figure (SVG, PDF and PNG): Figs. 1-3 and 5 at the published size and layout, Fig. 4
+in its revised layout (with the rule-switch panel f), and the supplementary Figs. S1-S2. By default the figures are
+drawn from the data of the published runs (`data/published/`); with `--simulate` the scripts recompute the data
 (`data/generated/`) and draw the figure from them.
 
 ## Installation
@@ -30,6 +33,9 @@ are drawn from the data of the published runs (`data/published/`); with `--simul
   ```bash
   julia --project=. -e 'using Pkg; Pkg.instantiate()'
   ```
+
+  If your default Julia is another version, install 1.11 with [juliaup](https://github.com/JuliaLang/juliaup)
+  (`juliaup add 1.11`) and run every command with `julia +1.11` instead of `julia`.
 
   Packages: DelimitedFiles, Distributions, LsqFit, MultivariateStats, Plots and standard libraries.
   Every script activates the environment of the repository by itself, so it always uses exactly these versions,
@@ -46,17 +52,19 @@ julia scripts/fig2.jl
 julia scripts/fig3.jl
 julia scripts/fig4.jl
 julia scripts/fig5.jl
+julia scripts/figS1.jl
+julia scripts/figS2.jl
 ```
 
-Each script takes a few seconds. Schematics and panels that show one particular network realization are embedded
-as artwork (`assets/`); everything else is drawn from data.
+Each script takes a few seconds. Panels that show one particular network realization, and most schematics, are
+embedded as artwork (`assets/`); everything else is drawn by the scripts, from the data.
 
 ## Data and figures
 
 ```
 data/published/           data of the published figures: read by default, never written by the scripts
 data/generated/[TAG/]     data computed by the scripts, same layout (not under version control)
-figures/<source>/         rendered figures: figures/published/, figures/generated/[TAG/], ...
+figures/<source>/         rendered figures: figures/published/ (under version control), figures/generated/[TAG/], ...
 ```
 
 The layout and the file formats are described in [`data/README.md`](data/README.md). The same flags work in every
@@ -73,8 +81,8 @@ script:
 
 ## Reproducing the results from scratch
 
-All results can be recomputed from the code alone. Simulations are seeded, except the WCST runs (unseeded, as in
-the study); new results are statistically equivalent to the published ones, not identical.
+All results can be recomputed from the code alone. Simulations are seeded, except the WCST sweep of Figs. 4b-c and 5
+(unseeded, as in the study); new results are statistically equivalent to the published ones, not identical.
 
 ```bash
 julia scripts/self_couplings.jl                        # self-couplings (~2 min)
@@ -82,7 +90,9 @@ julia scripts/fig1.jl --simulate --s=generated         # Fig. 1 (~2 min)
 julia scripts/fig2.jl --simulate --s=generated         # Fig. 2 (~40 min)
 julia -t 9 scripts/fig3.jl --simulate --s=generated    # Fig. 3 (~2 min on 9 threads)
 julia -t 16 scripts/fig5.jl --simulate --s=generated   # WCST sweep and Fig. 5 (~20 CPU-hours)
-julia scripts/fig4.jl --data=generated                 # Fig. 4 from the same sweep
+julia -t 16 scripts/figS2.jl --simulate --s=generated  # switch runs and Fig. S2 (~5 min on 16 threads)
+julia scripts/fig4.jl --data=generated                 # Fig. 4 from the WCST sweep and the switch runs
+julia -t 16 scripts/figS1.jl --simulate --s=generated  # Fig. S1 (~1 h on 16 threads)
 ```
 
 The data go to `data/generated/` and the figures to `figures/generated/`. Without `--s=generated` the simulations
@@ -164,26 +174,23 @@ reproducible for a given seed, whatever the number of threads.
 ### Figure 4: WCST strategy of the s-network (g_b = 0.8)
 
 ```bash
-julia scripts/fig4.jl                      # published WCST results
+julia scripts/fig4.jl                      # published data
 julia -t 16 scripts/fig4.jl --simulate     # only the runs of Fig. 4: 50 s-network runs at g_b = 0.8 (~1 CPU-hour)
-julia scripts/fig4.jl --kde                # panel b with kernel density estimates (figure fig4_kde)
+                                           # and the switch runs of panel f and Fig. S2 (~5 min on 16 threads)
+julia scripts/fig4.jl --gaussian           # panel b with Gaussian fits instead (figure fig4_gaussian)
 ```
 
 | Panel | Content | Default source |
 |---|---|---|
-| a | reservoir and task | schematic |
-| b | maximum readout weight vs self-coupling of the unit (response, context), Gaussian fits (`--kde`: kernel density estimates, Scott's bandwidth) | `wcst/` |
+| a | the task (central card, correct choice in each context) and the reservoir with its inputs and readouts | task drawn; reservoir: artwork |
+| b | maximum readout weight vs self-coupling of the unit (response, context), kernel density estimates (Scott's bandwidth; `--gaussian`: Gaussian fits) | `wcst/` |
 | c | sorted self-couplings before learning; after learning, mean ± std over 50 networks | `wcst/` |
 | d, e | state space of one network (PCA, hysteresis) | artwork; see `scripts/explore_wcst.jl` |
+| f | accuracy on the last trial before a rule switch and on the first four after it, error signal halved with probability 0.5 during the test (mean ± SEM over 200 networks) | `switch/` |
 
-Draft panel (not in the figure): accuracy on the last trial before a rule switch and on the four trials after it
-(switches between two blocks of at least 4 trials), for s-networks (g_b = 0.8) trained with the error signal of the
-paper; during the test each error pulse is halved with probability 0.5 (`run_wcst_switch`). It needs the per-trial
-results of a new run (the published data have none):
-
-```bash
-julia -t 16 scripts/fig4_switch.jl --simulate   # 200 networks, seed 2026 (~5 min) -> data/generated/fig4_switch/
-```
+The figure is laid out on four columns (a and d span two). The reservoir of a and panels d, e show one unseeded
+network: they are pieces of the published figure (`assets/fig4_artwork_*.svg`, one per piece). Panel f is the
+p = 0.5 panel of Fig. S2.
 
 ### Figure 5: heterogeneous s vs heterogeneous τ0
 
@@ -203,6 +210,55 @@ WCST model: N = 500, g = 0.4. The s-network has the self-couplings of Fig. 1 and
 self-coupling and τ0 evenly spaced in [0.01, 0.05] s. Each run has 20 transient, 80 learning and 100 test trials, a
 20 % probability of rule change per trial, inputs g_cards = 1.0 and g_error = 1.75, a ridge readout (β = 0.01) fed
 back into the network, and a power-law test of the closed-loop network from 100 random initial states.
+
+### Supplementary Figure S1: the autonomous network relaxes to a fixed point
+
+```bash
+julia scripts/figS1.jl                             # published data
+julia -t 16 scripts/figS1.jl --simulate            # new run (~1 h on 16 threads)
+julia -t 8 scripts/figS1.jl --simulate --smoke     # quick test: few networks, short runs (data/generated/smoke/)
+```
+
+| Panel | Content | Default source |
+|---|---|---|
+| a | activity of one network (g = 0.4, network 58, median convergence time) from r = 1 to 3 times its fixed-point time (dashed line: the fixed point), neurons in order of increasing s | `figS1/regime/example_*.tsv` |
+| b | fixed-point residual \|tanh(Jr) − r\|/√N of the networks that reach a fixed point (the network of a in dark; dashed line: the tolerance 10⁻⁷) | `figS1/regime/` |
+| c | two largest Lyapunov exponents λ1, λ2 of 100 networks for g = 0.38, 0.39, 0.40, 0.41, 0.42, one point per network (dashed line: 0; λ1 > 0 means chaos; axes up to 1 s⁻¹, larger values marked ▲ with their value) | `figS1/lyapunov/` |
+
+Model: as Fig. 1 (N = 500, τ0 = 0.01 s, dt = 1 ms, r = 1 at t = 0), with no input and no noise, simulated until the
+residual stays below 10⁻⁷ for 20 s (fixed point) or for 10,000 s. Lyapunov exponents: tangent-vector
+renormalization every 50 ms (Benettin et al. 1980), 100 s of alignment and 300 s of measurement after the convergence.
+Network k has the seed 20001 + k − 1; for each g the same off-diagonal couplings are scaled to spectral radius g.
+
+Results of the published run: at g = 0.4, 96 of 100 networks reach a fixed point after 354 s on average (95% CI
+286–426 s; median 218 s), with largest Lyapunov exponent −3.60 s⁻¹ (95% CI −3.94 to −3.26). Over g = 0.38–0.42,
+λ1 lies between −8.0 and −0.12 s⁻¹ at every fixed point (91–96 networks per g); 30 of the 500 trajectories end on a
+stable periodic orbit (|λ1| ≤ 0.01 s⁻¹, λ2 < 0; at g = 0.4 the 4 networks without a fixed point, not shown in b) and
+one, at g = 0.42, is chaotic (λ1 = 4.0 s⁻¹; still chaotic when measured from 20,000 s, λ1 = 1.5 s⁻¹). A positive
+exponent over a finite window is evidence of chaos, not a proof.
+
+### Supplementary Figure S2: accuracy around a rule switch with unreliable error signals
+
+```bash
+julia scripts/figS2.jl                             # published data
+julia -t 16 scripts/figS2.jl --simulate            # 200 networks x 4 values of p, seed 2026 (~5 min on 16 threads)
+```
+
+| Panel | Content | Source |
+|---|---|---|
+| a–d | accuracy on the last trial before a rule switch and on the first four after it, mean ± SEM over 200 s-networks (g_b = 0.8), for p = 0, 0.25, 0.5, 0.75 | `switch/` |
+
+The networks are trained as in Fig. 4 (full error signal); during the test each error signal is halved with
+probability p (`run_wcst_switch`). Network k has the seed 2026 + k for every p, so the four panels show the same
+networks, tasks and trainings. Only the switches between two blocks of at least 4 test trials are counted (977
+switches), so that every bar averages the same switches. Accuracy = fraction of correct responses (no error signal).
+
+| p | last | 1st | 2nd | 3rd | 4th |
+|---|---|---|---|---|---|
+| 0 | 0.99 | 0.01 | 0.99 | 0.99 | 0.99 |
+| 0.25 | 0.99 | 0.01 | 0.79 | 0.94 | 0.98 |
+| 0.5 | 0.97 | 0.02 | 0.57 | 0.79 | 0.90 |
+| 0.75 | 0.87 | 0.10 | 0.41 | 0.56 | 0.68 |
 
 ## Self-couplings
 
@@ -238,7 +294,7 @@ julia scripts/explore_timescales.jl     # or open it in VS Code and run the cell
 ```
 scripts/
   fig1.jl ... fig5.jl     one script per figure
-  fig4_switch.jl          draft panel for Fig. 4: accuracy around a rule switch
+  figS1.jl, figS2.jl      Supplementary Figs. S1, S2
   self_couplings.jl       new self-coupling vector (Methods)
   explore_timescales.jl   interactive exploration of Figs. 1-2
   explore_wcst.jl         interactive exploration of the WCST (Figs. 4-5)
@@ -250,11 +306,13 @@ src/
   memory_task.jl          Fig. 3: stimulation protocol and correlations
   wcst.jl                 Figs. 4-5: task, training, test, power-law test, sweep
   wcst_plots.jl           plots of explore_wcst.jl
+  regime.jl               Fig. S1: fixed-point convergence, Lyapunov exponents
+  switch.jl               Fig. 4f, Fig. S2: accuracy around a rule switch, its statistics and bar panel
   SVGFigure.jl            figure builder (layout in mm, Arial text, SVG/PDF/PNG)
 data/
   README.md               layout and file formats
-  published/              self_couplings.txt, fig1/, fig2/, fig3/, wcst/: data of the published figures
+  published/              self_couplings.txt, fig1/, fig2/, fig3/, wcst/, switch/, figS1/: data of the figures
   generated/              data computed by the scripts (not under version control)
-assets/                   artwork of the published figures, embedded by the scripts
-figures/                  rendered figures (not under version control)
+assets/                   artwork of the published figures, embedded by the scripts (Fig. 4: one file per piece)
+figures/                  rendered figures; published/ (from data/published) is under version control
 ```

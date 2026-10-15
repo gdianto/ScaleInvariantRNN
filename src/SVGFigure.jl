@@ -7,7 +7,7 @@ module SVGFigure
 
 using Base64, Printf
 
-export Figure, Axes, xmm, ymm, line!, polygon!, rect!, circle!, text!, image!, raw!, contour!, embed!, png_bytes,
+export Figure, Axes, xmm, ymm, line!, polygon!, rect!, circle!, text!, image!, raw!, contour!, embed!, place!, png_bytes,
        plot!, band!, steps!, scatter!, xaxis!, yaxis!, save, PT
 
 const PT = 25.4 / 72                                  # mm per pt
@@ -201,6 +201,16 @@ function embed!(fig::Figure, svgfile::AbstractString; x=0.0, y=0.0, w=fig.w, h=f
     print(fig.body, "<svg x=\"$(fmt(x))\" y=\"$(fmt(y))\" width=\"$(fmt(w))\" height=\"$(fmt(h))\" viewBox=\"$vb\" ",
           "xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\" xmlns:sodipodi=\"http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd\">",
           inner, "</svg>\n")
+end
+
+# Place an SVG drawn in page coordinates (mm), e.g. a piece of a published figure, shifted by (dx, dy) mm
+function place!(fig::Figure, svgfile::AbstractString, dx, dy)
+    s = read(svgfile, String)
+    a = findfirst('>', s[findfirst("<svg", s)[1]:end]) + findfirst("<svg", s)[1] - 1
+    inner = s[a+1:findlast("</svg>", s)[1]-1]
+    print(fig.body, "<g transform=\"translate($(fmt(dx)),$(fmt(dy)))\" ",
+          "xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\" xmlns:sodipodi=\"http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd\">",
+          inner, "</g>\n")
 end
 
 # ------------------------------------------------------------------ axes decorations
