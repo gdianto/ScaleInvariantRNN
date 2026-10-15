@@ -216,26 +216,27 @@ back into the network, and a power-law test of the closed-loop network from 100 
 ```bash
 julia scripts/figS1.jl                             # published data
 julia -t 16 scripts/figS1.jl --simulate            # new run (~1 h on 16 threads)
+julia -t 16 scripts/figS1.jl --simulate --seed=N --tag=TAG   # other networks: network k has the seed N + k - 1
 julia -t 8 scripts/figS1.jl --simulate --smoke     # quick test: few networks, short runs (data/generated/smoke/)
 ```
 
 | Panel | Content | Default source |
 |---|---|---|
-| a | activity of one network (g = 0.4, network 58, median convergence time) from r = 1 to 3 times its fixed-point time (dashed line: the fixed point), neurons in order of increasing s | `figS1/regime/example_*.tsv` |
+| a | activity of the network with the median convergence time (g = 0.4; network 86 of the published run, 150 s) from r = 1 to 3 times its fixed-point time (dashed line: the fixed point), neurons in order of increasing s | `figS1/regime/example_*.tsv` |
 | b | fixed-point residual \|tanh(Jr) − r\|/√N of the networks that reach a fixed point (the network of a in dark; dashed line: the tolerance 10⁻⁷) | `figS1/regime/` |
 | c | two largest Lyapunov exponents λ1, λ2 of 100 networks for g = 0.38, 0.39, 0.40, 0.41, 0.42, one point per network (dashed line: 0; λ1 > 0 means chaos; axes up to 1 s⁻¹, larger values marked ▲ with their value) | `figS1/lyapunov/` |
 
 Model: as Fig. 1 (N = 500, τ0 = 0.01 s, dt = 1 ms, r = 1 at t = 0), with no input and no noise, simulated until the
 residual stays below 10⁻⁷ for 20 s (fixed point) or for 10,000 s. Lyapunov exponents: tangent-vector
 renormalization every 50 ms (Benettin et al. 1980), 100 s of alignment and 300 s of measurement after the convergence.
-Network k has the seed 20001 + k − 1; for each g the same off-diagonal couplings are scaled to spectral radius g.
+Network k has the seed 30001 + k − 1; for each g the same off-diagonal couplings are scaled to spectral radius g.
 
-Results of the published run: at g = 0.4, 96 of 100 networks reach a fixed point after 354 s on average (95% CI
-286–426 s; median 218 s), with largest Lyapunov exponent −3.60 s⁻¹ (95% CI −3.94 to −3.26). Over g = 0.38–0.42,
-λ1 lies between −8.0 and −0.12 s⁻¹ at every fixed point (91–96 networks per g); 30 of the 500 trajectories end on a
-stable periodic orbit (|λ1| ≤ 0.01 s⁻¹, λ2 < 0; at g = 0.4 the 4 networks without a fixed point, not shown in b) and
-one, at g = 0.42, is chaotic (λ1 = 4.0 s⁻¹; still chaotic when measured from 20,000 s, λ1 = 1.5 s⁻¹). A positive
-exponent over a finite window is evidence of chaos, not a proof.
+Results of the published run: at g = 0.4, 93 of 100 networks reach a fixed point after 445 s on average (95% CI
+308–605 s; median 150 s), with largest Lyapunov exponent −3.26 s⁻¹ (95% CI −3.56 to −2.95). Over g = 0.38–0.42,
+λ1 lies between −10.7 and −0.11 s⁻¹ at every fixed point (91–98 networks per g); 25 of the 500 trajectories end on a
+stable periodic orbit (|λ1| < 0.01 s⁻¹, λ2 < 0; at g = 0.4 the 7 networks without a fixed point, not shown in b). In
+the remaining one (g = 0.42) λ1 is compatible with 0 and λ2 < 0, but the full state does not recur within 5% at the
+periods searched (autocorrelation peaks up to 10 s and their multiples). No trajectory has a positive λ1.
 
 ### Supplementary Figure S2: accuracy around a rule switch with unreliable error signals
 

@@ -12,16 +12,16 @@
 
 using LinearAlgebra, Random, Statistics, Printf, DelimitedFiles
 
-const REGIME = (N=FIG1.n_units, g=FIG1.g, τ=FIG1.τ, dt=FIG1.dt, nets=100, seed=20001, max_duration=10_000.0,
+const REGIME = (N=FIG1.n_units, g=FIG1.g, τ=FIG1.τ, dt=FIG1.dt, nets=100, seed=30001, max_duration=10_000.0,
                 tolerance=1e-7, hold=20.0, renormalization=0.05, alignment=100.0, measurement=300.0, block=5.0,
                 residual_every=1.0, n_bootstrap=10_000, bootstrap_seed=91_337, tangent_offset=1_000_000)
-const LYAPUNOV_G = (g_values=[0.38, 0.39, 0.4, 0.41, 0.42], nets=100, seed=20001, max_duration=10_000.0, alignment=100.0,
+const LYAPUNOV_G = (g_values=[0.38, 0.39, 0.4, 0.41, 0.42], nets=100, seed=30001, max_duration=10_000.0, alignment=100.0,
                     measurement=300.0, block=10.0, save_every=0.01, max_lag=10.0, min_period=0.05,
                     recurrence_tolerance=0.05, stride=20, tangent_offset=2_000_000)
-const EXAMPLE = (realization=58, ncols=300, span=3.0)  # network with the median convergence time (218 s), up to 3 times it
+const EXAMPLE = (ncols=300, span=3.0)                  # example of Fig. S1a: up to 3 times its convergence time
 smoke_regime(c) = merge(c, (nets=4, max_duration=200.0))                      # quick pipeline test
 smoke_lyapunov_g(c) = merge(c, (g_values=[0.39, 0.41], nets=2, max_duration=60.0, alignment=10.0, measurement=20.0))
-smoke_example(e) = merge(e, (realization=3, ncols=100))
+smoke_example(e) = merge(e, (ncols=100,))
 
 # ------------------------------------------------------------------ dynamics
 "Euler steps from `r` until ρ = |tanh(Jr) - r|/√N stays below `tolerance` for `hold` s or `max_duration` is reached.
@@ -289,6 +289,15 @@ function run_regime(dir, s; c=REGIME)
                       @printf("  network %3d: no fixed point by %.0f s\n", k, c.max_duration)
     end
     write_regime(dir, res, s; c)
+    return res
+end
+
+"Network with the median convergence time among those of `res` that reach a fixed point (the later one of the two
+middle networks if their number is even)."
+function median_network(res)
+    conv = sort([x for x in res if x.converged]; by=x -> x.fixed_point_time)
+    isempty(conv) && error("no network reaches a fixed point")
+    return conv[length(conv) ÷ 2 + 1].realization
 end
 
 function write_regime(dir, res, s; c)
@@ -416,25 +425,25 @@ function run_lyapunov_g(dir, s; c=LYAPUNOV_G, r=REGIME)
 end
 
 # ------------------------------------------------------------------ example: activity up to the fixed point
-"Activity (units × times) of network `e.realization` of the paper from r = 1 to `e.span` times the time of its fixed
-point, at `e.ncols` log-spaced times from dt on."
-function activity_example(s; e=EXAMPLE, c=REGIME)
+"Activity (units × times) of network `realization` of `run_regime` (seed c.seed + realization - 1) from r = 1 to
+`e.span` times the time of its fixed point, at `e.ncols` log-spaced times from dt on."
+function activity_example(s, realization; e=EXAMPLE, c=REGIME)
     BLAS.set_num_threads(1)                               # the trajectory of run_regime
     function run(hold, record)
-        Random.seed!(c.seed + e.realization - 1)
+        Random.seed!(c.seed + realization - 1)
         net = coupled_network(s, c.g, c.τ)
         return converge!(net.r, net.J; c.τ, c.dt, c.max_duration, c.tolerance, hold, record)
     end
     conv = run(c.hold, Int[])
-    conv.converged || error("network $(e.realization) has no fixed point")
+    conv.converged || error("network $realization has no fixed point")
     hold = (e.span - 1) * conv.time                       # stays below the tolerance until span * time
     steps = unique(round.(Int, exp10.(range(0, log10(conv.time / c.dt + hold / c.dt), length=e.ncols))))
     A = run(hold, steps).states
     return steps[1:size(A, 2)] .* c.dt, A
 end
 
-function write_example(dir, s; e=EXAMPLE, c=REGIME)
-    t, A = activity_example(s; e, c)
+function write_example(dir, s, realization; e=EXAMPLE, c=REGIME)
+    t, A = activity_example(s, realization; e, c)
     mkpath(dir)
     writedlm(joinpath(dir, "example_times.tsv"), ["time_s"; t])
     writedlm(joinpath(dir, "example_activity.tsv"), round.(A, sigdigits=6), '\t')

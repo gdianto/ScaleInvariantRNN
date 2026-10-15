@@ -1,17 +1,20 @@
 # Supplementary Figure S1: the autonomous network of the paper relaxes to a fixed point (no input, no noise, r = 1 at t = 0).
 #
-#   a  activity r_i(t) of one network (g = 0.4) up to its fixed point (neurons in order of increasing s); log time
+#   a  activity r_i(t) of the network with the median convergence time (g = 0.4) up to its fixed point (neurons in
+#      order of increasing s); log time
 #   b  fixed-point residual |tanh(Jr) - r|/√N of the networks that reach a fixed point (the network of a highlighted)
 #   c  two largest Lyapunov exponents λ1 (top) and λ2 (bottom) of 100 networks for g = 0.38-0.42 (one point per network)
 #
 # Usage:
 #   julia scripts/figS1.jl                              # published data (data/published/figS1)
 #   julia -t 16 scripts/figS1.jl --simulate             # new run (~1 h on 16 threads) -> data/generated/figS1
+#     --seed=30001  network k uses the seed seed + k - 1 (the same networks in the three panels)
 #   julia -t 8 scripts/figS1.jl --simulate --smoke      # quick test: short runs, few networks (data/generated/smoke/figS1)
 #   julia scripts/figS1.jl --data=generated             # figure from the data of an earlier run (or --data=FOLDER)
 # Other flags (--s, --tag, --force, --out): see README.md. The figure goes to figures/<data source>/figS1.
 #
-# The simulation is seeded (network k: seed 20001 + k - 1): it is bit-reproducible whatever the number of threads.
+# The simulation is seeded (network k: seed 30001 + k - 1 by default): it is bit-reproducible whatever the number of
+# threads.
 include(joinpath(@__DIR__, "..", "src", "project.jl"))
 using DelimitedFiles, LinearAlgebra, Random, Statistics, Printf
 import Plots                                              # colour map
@@ -23,13 +26,13 @@ include(projectdir("src", "regime.jl"))
 const TEAL, DARK = "#4a7b81", "#1a0e34"
 
 # ------------------------------------------------------------------ simulation (--simulate)
-function simulate(smoke::Bool)
+function simulate(smoke::Bool, seed::Int)
     dir = new_data_dir("figS1")
     s = vec(readdlm(self_couplings_file(), ',', Float64))
-    c = smoke ? smoke_regime(REGIME) : REGIME
-    run_regime(joinpath(dir, "regime"), s; c)
-    write_example(joinpath(dir, "regime"), s; e=smoke ? smoke_example(EXAMPLE) : EXAMPLE, c)
-    run_lyapunov_g(joinpath(dir, "lyapunov"), s; c=smoke ? smoke_lyapunov_g(LYAPUNOV_G) : LYAPUNOV_G)
+    c = merge(smoke ? smoke_regime(REGIME) : REGIME, (; seed))
+    res = run_regime(joinpath(dir, "regime"), s; c)
+    write_example(joinpath(dir, "regime"), s, median_network(res); e=smoke ? smoke_example(EXAMPLE) : EXAMPLE, c)
+    run_lyapunov_g(joinpath(dir, "lyapunov"), s; c=merge(smoke ? smoke_lyapunov_g(LYAPUNOV_G) : LYAPUNOV_G, (; seed)))
     println("Data in $dir")
 end
 
@@ -102,7 +105,9 @@ function figS1(data, out)
 
     # ---- b: fixed-point residual of the networks that reach a fixed point
     letter!(68.0, 3.5, "b")
-    ax = Axes(fig; left=81.0, right=122.0, top=5.0, bottom=36.0, xscale=:log10, yscale=:log10, xlim=(1.0, 3e3), ylim=(1e-17, 10.0))
+    decades = 0:ceil(Int, log10(maximum(x[end] for (x, _) in data.residuals)))      # up to the slowest fixed point
+    ax = Axes(fig; left=81.0, right=122.0, top=5.0, bottom=36.0, xscale=:log10, yscale=:log10, xlim=(1.0, 10.0^decades[end]),
+              ylim=(1e-17, 10.0))
     for (k, (x, ρ)) in enumerate(data.residuals)
         k == data.example && continue
         keep = x .>= 1.0
@@ -112,9 +117,9 @@ function figS1(data, out)
         x, ρ = data.residuals[data.example]
         plot!(ax, x[x .>= 1.0], max.(ρ[x .>= 1.0], 1e-17); color=DARK, width=0.7)
     end
-    plot!(ax, [1.0, 3e3], [1e-7, 1e-7]; color="#000000", width=0.4, dash=(1.5, 1.0), cap="butt")
+    plot!(ax, collect(ax.xlim), [1e-7, 1e-7]; color="#000000", width=0.4, dash=(1.5, 1.0), cap="butt")
     text!(fig, ax.left + 1.0, ymm(ax, 1e-7) - 1.0, "tolerance")
-    xaxis!(ax; ticks=10.0 .^ (0:3), labels=pow10.(0:3))
+    xaxis!(ax; ticks=10.0 .^ decades, labels=pow10.(decades))
     yaxis!(ax; ticks=[1.0, 1e-8, 1e-16], labels=pow10.([0, -8, -16]), baselineshift=0.75)
     text!(fig, 101.5, 42.0, "time, t [s]"; anchor="middle")
     text!(fig, 70.5, 20.5, "‖tanh(Jr) − r‖ / √N"; anchor="middle", rotate=-90)
@@ -148,5 +153,5 @@ function figS1(data, out)
 end
 
 # ------------------------------------------------------------------ main
-hasflag("simulate") && simulate(hasflag("smoke"))
+hasflag("simulate") && simulate(hasflag("smoke"), parse(Int, flagvalue("seed", string(REGIME.seed))))
 figS1(load_data(data_dir("figS1")), figure_path("figS1"))

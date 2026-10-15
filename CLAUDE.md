@@ -52,7 +52,8 @@ networks: multiple timescales, OU-driven decoupled network, short-term memory ta
   network. `run_regime` was rewritten from the original analysis scripts and verified byte-identical to them;
   `run_lyapunov_g` and `write_example` were added for the figure. Keep the tangent seeds
   (regime `seed + 1_000_000` Xoshiro, lyapunov_g `seed + 2_000_000` MersenneTwister) and BLAS on one thread: the long
-  irregular transients amplify rounding differences (with more BLAS threads network 58 converges at 390 s, not 218 s).
+  irregular transients amplify rounding differences (with more BLAS threads the network of seed 20058 converged at
+  390 s instead of 218 s).
 - `src/switch.jl` (Fig. 4f, Fig. S2): result files, statistics and the bar panel (needs SVGFigure); the runs are
   `run_switch_sweep` in `src/wcst.jl`, seeded per network (2026 + k), paired across p, BLAS on 1 thread. Data:
   `data/published/switch/` (written by `fig4.jl --simulate` and `figS2.jl --simulate`).
@@ -95,8 +96,9 @@ networks: multiple timescales, OU-driven decoupled network, short-term memory ta
 - Figs. 4-5: `run_wcst` / `run_wcst_sweep` in `src/wcst.jl`, unseeded (as the original study).
 - Fig. 4f and Fig. S2: `run_switch_sweep` in `src/wcst.jl`, seeded (network k: 2026 + k), bit-reproducible for any
   number of Julia threads (`figS2.jl --simulate --nets=2` for a quick check).
-- Fig. S1: `src/regime.jl`, seeded per network (20001, ...), bit-reproducible for any number of Julia threads
-  (`figS1.jl --simulate --smoke` for a quick check). The published data were computed with Julia 1.11.9.
+- Fig. S1: `src/regime.jl`, seeded per network (`--seed`, default 30001: network k has seed + k - 1; the example of
+  panel a is the network with the median convergence time, `median_network`), bit-reproducible for any number of
+  Julia threads (`figS1.jl --simulate --smoke` for a quick check). The published data were computed with Julia 1.11.9.
 - To verify a change of simulation code: put the same `Random.seed!(n)` after the includes in a scratch copy of
   the old and of the new code, run both with the same BLAS thread count (e.g. `OPENBLAS_NUM_THREADS=2`) and
   compare the result files byte for byte (`fig1.jl`/`fig2.jl --simulate --smoke` are seeded; `fig3.jl

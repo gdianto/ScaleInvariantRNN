@@ -74,7 +74,7 @@ One line per run; `<type>` is `s` (s-network) or `tau` (τ0-network), `<g_b>` = 
 ## figS1/ (`scripts/figS1.jl`)
 
 Autonomous network τ0 dr/dt = −r + tanh(J r) (N = 500, τ0 = 0.01 s, dt = 1 ms, r = 1 at t = 0, no input, no noise),
-`src/regime.jl`. Network k has the seed 20001 + k − 1 in both folders. The published data were computed with Julia
+`src/regime.jl`. Network k has the seed 30001 + k − 1 in both folders. The published data were computed with Julia
 1.11.9; other Julia versions may draw different matrices from the same seeds.
 
 `regime/`: 100 networks of the paper (g = 0.4).
@@ -86,7 +86,7 @@ Autonomous network τ0 dr/dt = −r + tanh(J r) (N = 500, τ0 = 0.01 s, dt = 1 m
 | `lyapunov_blocks.tsv` | the largest Lyapunov exponent in blocks of 5 s |
 | `final_states.tsv` | final state of every unit (fixed point, or the state at 10,000 s), with its self-coupling |
 | `summary.txt` | parameters, fraction of fixed points, mean convergence time and exponent with bootstrap 95% intervals |
-| `example_times.tsv`, `example_activity.tsv` | network 58 (median convergence time, 218 s): activity of every unit (rows, sorted by s) at 255 log-spaced times (columns) from 1 ms to 3 times its fixed-point time |
+| `example_times.tsv`, `example_activity.tsv` | the network with the median convergence time (published run: network 86, 150 s): activity of every unit (rows, sorted by s) at 255 log-spaced times (columns) from 1 ms to 3 times its fixed-point time |
 
 `lyapunov/`: the same 100 networks for g = 0.38, 0.39, 0.40, 0.41, 0.42 (the off-diagonal couplings of each network
 scaled to spectral radius g): convergence from r = 1 as in `regime/`, then the two largest Lyapunov exponents from the
