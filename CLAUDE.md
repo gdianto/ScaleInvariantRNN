@@ -5,15 +5,17 @@ networks: multiple timescales, OU-driven decoupled network, short-term memory ta
 
 ## Rules for this repository
 - One script per paper figure in `scripts/` (`fig1.jl` ... `fig5.jl`, supplementary `figS1.jl`, `figS2.jl`). Each
-  writes the *complete* figure, identical to the published one (Fig. 4: the revised layout approved by the user, see
-  below). Reusable code goes in `src/`.
+  writes the *complete* figure, identical to the published one except for the revisions approved by the user (sub/
+  superscripts enlarged to 5 pt in all figures; Fig. 4: the revised layout, see below; Fig. 5: revised panels).
+  Reusable code goes in `src/`. The manuscript includes these renders (`manuscript/Figures/figN.pdf`, not in git).
 - `scripts/explore_wcst.jl` and `scripts/explore_timescales.jl` are interactive (cell-by-cell) explorations.
   Keep their `##` cells, all parameters in the first cell (paper values as defaults) and the top-level
   variables the cells expose. `src/wcst_plots.jl` uses `using Plots`: never include it in the figure scripts.
 - Style: Julia conventions (lowercase functions and variables, `!` for mutating functions, CamelCase types and
   modules, UPPERCASE constants; math symbols of the paper such as N, J, W, R, τ are fine). Keep code and
   comments simple and short; no over-engineering.
-- Figure style: Arial; 7 pt labels and tick labels, sub/superscripts at 65%, 10 pt bold panel letters;
+- Figure style: Arial; 7 pt labels and tick labels, 10 pt bold panel letters; no text below 5 pt, sub/superscripts
+  included (`MIN_PT` in src/SVGFigure.jl: indices of 7 pt text at 72%; the artwork assets were enlarged the same way);
   page size, panel positions, colours and line widths as measured from the published SVG (Figs. 1-3, 5; Fig. 4 and
   Figs. S1-S2 follow the grids of their scripts). All coordinates in mm from the top-left corner (`src/SVGFigure.jl`).
 - Data layout (see data/README.md): `data/published/` is the data of the published figures, never written by the
@@ -56,7 +58,8 @@ networks: multiple timescales, OU-driven decoupled network, short-term memory ta
   390 s instead of 218 s).
 - `src/switch.jl` (Fig. 4f, Fig. S2): result files, statistics and the bar panel (needs SVGFigure); the runs are
   `run_switch_sweep` in `src/wcst.jl`, seeded per network (2026 + k), paired across p, BLAS on 1 thread. Data:
-  `data/published/switch/` (written by `fig4.jl --simulate` and `figS2.jl --simulate`).
+  `data/published/switch/` (written by `fig4.jl --simulate` and `figS2.jl --simulate`). Fig. S2a (monkeys) reads
+  `data/published/bernardi2020/` (values read off the figure of Bernardi et al., Cell 2020), always from published.
 - `src/timescales.jl` (Figs. 1-2, `sample_self_couplings`, `escape_time` for the theory of Fig. 2d, which
   reproduces the published curve to 1e-10 with σ = √N σ_OU), `src/memory_task.jl` (Fig. 3), `src/wcst.jl`
   (Figs. 4-5): include after `project.jl` and `reservoir.jl`.
@@ -84,9 +87,11 @@ networks: multiple timescales, OU-driven decoupled network, short-term memory ta
 - Fig. 4b: the official version shows kernel density estimates (default of `fig4.jl`); `--gaussian` gives the
   Gaussian fits of the first published version, in the revised layout (`fig4_gaussian`).
 - The default figure scripts are deterministic: check a change by comparing their SVG output before and after.
-  Against the published figures (300 dpi, grey-level difference > 40) Figs. 1-2 differ in < 0.01% of the pixels,
-  Fig. 3 in ~0.1%, Fig. 5 in ~1.5% (its panels c-d show mean ± std on purpose; the published bands were mean/√n).
-  Fig. 4 has the revised layout (no longer compared with the published SVG).
+  Against the published figures (300 dpi, grey-level difference > 40) Figs. 1-2 differed in < 0.01% of the pixels and
+  Fig. 3 in ~0.1% before the indices were enlarged to 5 pt (now they differ there too). Fig. 4 has the revised layout and Fig. 5 revised panels (c-d: mean ± std instead of mean/√n;
+  d: plain tick labels; e: g_fb = 0.1, 0.3, 0.6, time in s, power-law fit of g_fb = 0.1 with
+  `fit_acf_power_law` (src/wcst.jl, the fit of `power_law_test`: from t = 0.02 s on), dashed as in Fig. 1f): neither is compared with the published SVG any more. The paper calls the context feedback gain g_fb (figure labels too);
+  the code and the data files keep g_b / gb.
 
 ## Simulations (`--simulate`)
 - Figs. 1-2: `src/timescales.jl`, seeded (Fig. 1: 1234; Fig. 2: 1234 coupled, 4321 decoupled). `--smoke` runs

@@ -13,11 +13,11 @@
 <text x="53.3706" y="4.0000" style="font-family:Arial;font-size:2.4694px;text-anchor:end;fill:#000000">fixed point</text>
 <polyline points="13.0000,36.0000 56.0000,36.0000" fill="none" stroke="#000000" stroke-width="0.2222" stroke-linecap="butt" stroke-linejoin="round"/>
 <polyline points="20.6068,36.0000 20.6068,36.5260" fill="none" stroke="#000000" stroke-width="0.2222" stroke-linecap="butt" stroke-linejoin="round"/>
-<text x="20.6068" y="38.7800" style="font-family:Arial;font-size:2.4694px;text-anchor:middle;fill:#000000">10<tspan style="font-size:65%;baseline-shift:super">-2</tspan></text>
+<text x="20.6068" y="38.7800" style="font-family:Arial;font-size:2.4694px;text-anchor:middle;fill:#000000">10<tspan style="font-size:72%;baseline-shift:super">-2</tspan></text>
 <polyline points="35.8204,36.0000 35.8204,36.5260" fill="none" stroke="#000000" stroke-width="0.2222" stroke-linecap="butt" stroke-linejoin="round"/>
-<text x="35.8204" y="38.7800" style="font-family:Arial;font-size:2.4694px;text-anchor:middle;fill:#000000">10<tspan style="font-size:65%;baseline-shift:super">0</tspan></text>
+<text x="35.8204" y="38.7800" style="font-family:Arial;font-size:2.4694px;text-anchor:middle;fill:#000000">10<tspan style="font-size:72%;baseline-shift:super">0</tspan></text>
 <polyline points="51.0339,36.0000 51.0339,36.5260" fill="none" stroke="#000000" stroke-width="0.2222" stroke-linecap="butt" stroke-linejoin="round"/>
-<text x="51.0339" y="38.7800" style="font-family:Arial;font-size:2.4694px;text-anchor:middle;fill:#000000">10<tspan style="font-size:65%;baseline-shift:super">2</tspan></text>
+<text x="51.0339" y="38.7800" style="font-family:Arial;font-size:2.4694px;text-anchor:middle;fill:#000000">10<tspan style="font-size:72%;baseline-shift:super">2</tspan></text>
 <polyline points="13.0000,36.0000 13.0000,5.0000" fill="none" stroke="#000000" stroke-width="0.2222" stroke-linecap="butt" stroke-linejoin="round"/>
 <polyline points="13.0000,29.8310 12.4740,29.8310" fill="none" stroke="#000000" stroke-width="0.2222" stroke-linecap="butt" stroke-linejoin="round"/>
 <text x="11.9000" y="30.5810" style="font-family:Arial;font-size:2.4694px;text-anchor:end;fill:#000000">100</text>
@@ -133,27 +133,27 @@
 <text x="82.0000" y="17.7778" style="font-family:Arial;font-size:2.4694px;text-anchor:start;fill:#000000">tolerance</text>
 <polyline points="81.0000,36.0000 122.0000,36.0000" fill="none" stroke="#000000" stroke-width="0.2222" stroke-linecap="butt" stroke-linejoin="round"/>
 <polyline points="81.0000,36.0000 81.0000,36.5260" fill="none" stroke="#000000" stroke-width="0.2222" stroke-linecap="butt" stroke-linejoin="round"/>
-<text x="81.0000" y="38.7800" style="font-family:Arial;font-size:2.4694px;text-anchor:middle;fill:#000000">10<tspan style="font-size:65%;baseline-shift:super">0</tspan></text>
+<text x="81.0000" y="38.7800" style="font-family:Arial;font-size:2.4694px;text-anchor:middle;fill:#000000">10<tspan style="font-size:72%;baseline-shift:super">0</tspan></text>
 <polyline points="91.2500,36.0000 91.2500,36.5260" fill="none" stroke="#000000" stroke-width="0.2222" stroke-linecap="butt" stroke-linejoin="round"/>
-<text x="91.2500" y="38.7800" style="font-family:Arial;font-size:2.4694px;text-anchor:middle;fill:#000000">10<tspan style="font-size:65%;baseline-shift:super">1</tspan></text>
+<text x="91.2500" y="38.7800" style="font-family:Arial;font-size:2.4694px;text-anchor:middle;fill:#000000">10<tspan style="font-size:72%;baseline-shift:super">1</tspan></text>
 <polyline points="101.5000,36.0000 101.5000,36.5260" fill="none" stroke="#000000" stroke-width="0.2222" stroke-linecap="butt" stroke-linejoin="round"/>
-<text x="101.5000" y="38.7800" style="font-family:Arial;font-size:2.4694px;text-anchor:middle;fill:#000000">10<tspan style="font-size:65%;baseline-shift:super">2</tspan></text>
+<text x="101.5000" y="38.7800" style="font-family:Arial;font-size:2.4694px;text-anchor:middle;fill:#000000">10<tspan style="font-size:72%;baseline-shift:super">2</tspan></text>
 <polyline points="111.7500,36.0000 111.7500,36.5260" fill="none" stroke="#000000" stroke-width="0.2222" stroke-linecap="butt" stroke-linejoin="round"/>
-<text x="111.7500" y="38.7800" style="font-family:Arial;font-size:2.4694px;text-anchor:middle;fill:#000000">10<tspan style="font-size:65%;baseline-shift:super">3</tspan></text>
+<text x="111.7500" y="38.7800" style="font-family:Arial;font-size:2.4694px;text-anchor:middle;fill:#000000">10<tspan style="font-size:72%;baseline-shift:super">3</tspan></text>
 <polyline points="122.0000,36.0000 122.0000,36.5260" fill="none" stroke="#000000" stroke-width="0.2222" stroke-linecap="butt" stroke-linejoin="round"/>
-<text x="122.0000" y="38.7800" style="font-family:Arial;font-size:2.4694px;text-anchor:middle;fill:#000000">10<tspan style="font-size:65%;baseline-shift:super">4</tspan></text>
+<text x="122.0000" y="38.7800" style="font-family:Arial;font-size:2.4694px;text-anchor:middle;fill:#000000">10<tspan style="font-size:72%;baseline-shift:super">4</tspan></text>
 <polyline points="81.0000,36.0000 81.0000,5.0000" fill="none" stroke="#000000" stroke-width="0.2222" stroke-linecap="butt" stroke-linejoin="round"/>
 <polyline points="81.0000,6.7222 80.4740,6.7222" fill="none" stroke="#000000" stroke-width="0.2222" stroke-linecap="butt" stroke-linejoin="round"/>
-<text x="79.9000" y="7.4722" style="font-family:Arial;font-size:2.4694px;text-anchor:end;fill:#000000">10<tspan style="font-size:65%;baseline-shift:super">0</tspan></text>
+<text x="79.9000" y="7.4722" style="font-family:Arial;font-size:2.4694px;text-anchor:end;fill:#000000">10<tspan style="font-size:72%;baseline-shift:super">0</tspan></text>
 <polyline points="81.0000,20.5000 80.4740,20.5000" fill="none" stroke="#000000" stroke-width="0.2222" stroke-linecap="butt" stroke-linejoin="round"/>
-<text x="79.9000" y="21.2500" style="font-family:Arial;font-size:2.4694px;text-anchor:end;fill:#000000">10<tspan style="font-size:65%;baseline-shift:super">-8</tspan></text>
+<text x="79.9000" y="21.2500" style="font-family:Arial;font-size:2.4694px;text-anchor:end;fill:#000000">10<tspan style="font-size:72%;baseline-shift:super">-8</tspan></text>
 <polyline points="81.0000,34.2778 80.4740,34.2778" fill="none" stroke="#000000" stroke-width="0.2222" stroke-linecap="butt" stroke-linejoin="round"/>
-<text x="79.9000" y="35.0278" style="font-family:Arial;font-size:2.4694px;text-anchor:end;fill:#000000">10<tspan style="font-size:65%;baseline-shift:super">-16</tspan></text>
+<text x="79.9000" y="35.0278" style="font-family:Arial;font-size:2.4694px;text-anchor:end;fill:#000000">10<tspan style="font-size:72%;baseline-shift:super">-16</tspan></text>
 <text x="101.5000" y="42.0000" style="font-family:Arial;font-size:2.4694px;text-anchor:middle;fill:#000000">time, t [s]</text>
 <text x="70.5000" y="20.5000" style="font-family:Arial;font-size:2.4694px;text-anchor:middle;fill:#000000" transform="rotate(-90.0000 70.5000 20.5000)">‖tanh(Jr) − r‖ / √N</text>
 <text x="127.5000" y="3.5000" style="font-family:Arial;font-size:3.5278px;font-weight:bold;text-anchor:start;fill:#000000">c</text>
 <polyline points="142.0000,5.8750 177.0000,5.8750" fill="none" stroke="#000000" stroke-width="0.1411" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="0.5292,0.3528" clip-path="url(#clip3)"/>
-<text x="143.0000" y="4.1750" style="font-family:Arial;font-size:2.4694px;text-anchor:start;fill:#000000">λ<tspan style="font-size:65%;baseline-shift:sub">1</tspan> &gt; 0: chaos</text>
+<text x="143.0000" y="4.1750" style="font-family:Arial;font-size:2.4694px;text-anchor:start;fill:#000000">λ<tspan style="font-size:72%;baseline-shift:sub">1</tspan> &gt; 0: chaos</text>
 <circle cx="143.6827" cy="7.8532" r="0.3000" fill="#4a7b81" fill-opacity="0.6000" clip-path="url(#clip3)"/>
 <circle cx="144.2062" cy="9.3285" r="0.3000" fill="#4a7b81" fill-opacity="0.6000" clip-path="url(#clip3)"/>
 <circle cx="144.7297" cy="6.9019" r="0.3000" fill="#4a7b81" fill-opacity="0.6000" clip-path="url(#clip3)"/>
@@ -669,7 +669,7 @@
 <text x="140.9000" y="11.0000" style="font-family:Arial;font-size:2.4694px;text-anchor:end;fill:#000000">-5</text>
 <polyline points="142.0000,5.8750 141.4740,5.8750" fill="none" stroke="#000000" stroke-width="0.2222" stroke-linecap="butt" stroke-linejoin="round"/>
 <text x="140.9000" y="6.6250" style="font-family:Arial;font-size:2.4694px;text-anchor:end;fill:#000000">0</text>
-<text x="133.0000" y="12.0000" style="font-family:Arial;font-size:2.4694px;text-anchor:middle;fill:#000000" transform="rotate(-90.0000 133.0000 12.0000)">λ<tspan style="font-size:65%;baseline-shift:sub">1</tspan> [s<tspan style="font-size:65%;baseline-shift:super">-1</tspan>]</text>
+<text x="133.0000" y="12.0000" style="font-family:Arial;font-size:2.4694px;text-anchor:middle;fill:#000000" transform="rotate(-90.0000 133.0000 12.0000)">λ<tspan style="font-size:72%;baseline-shift:sub">1</tspan> [s<tspan style="font-size:72%;baseline-shift:super">-1</tspan>]</text>
 <polyline points="142.0000,22.8750 177.0000,22.8750" fill="none" stroke="#000000" stroke-width="0.1411" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="0.5292,0.3528" clip-path="url(#clip4)"/>
 <circle cx="143.6827" cy="24.8536" r="0.3000" fill="#4a7b81" fill-opacity="0.6000" clip-path="url(#clip4)"/>
 <circle cx="144.2062" cy="28.7032" r="0.3000" fill="#4a7b81" fill-opacity="0.6000" clip-path="url(#clip4)"/>
@@ -1191,6 +1191,6 @@
 <text x="140.9000" y="28.0000" style="font-family:Arial;font-size:2.4694px;text-anchor:end;fill:#000000">-5</text>
 <polyline points="142.0000,22.8750 141.4740,22.8750" fill="none" stroke="#000000" stroke-width="0.2222" stroke-linecap="butt" stroke-linejoin="round"/>
 <text x="140.9000" y="23.6250" style="font-family:Arial;font-size:2.4694px;text-anchor:end;fill:#000000">0</text>
-<text x="133.0000" y="29.0000" style="font-family:Arial;font-size:2.4694px;text-anchor:middle;fill:#000000" transform="rotate(-90.0000 133.0000 29.0000)">λ<tspan style="font-size:65%;baseline-shift:sub">2</tspan> [s<tspan style="font-size:65%;baseline-shift:super">-1</tspan>]</text>
+<text x="133.0000" y="29.0000" style="font-family:Arial;font-size:2.4694px;text-anchor:middle;fill:#000000" transform="rotate(-90.0000 133.0000 29.0000)">λ<tspan style="font-size:72%;baseline-shift:sub">2</tspan> [s<tspan style="font-size:72%;baseline-shift:super">-1</tspan>]</text>
 <text x="159.5000" y="42.0000" style="font-family:Arial;font-size:2.4694px;text-anchor:middle;fill:#000000">recurrent gain, g</text>
 </svg>

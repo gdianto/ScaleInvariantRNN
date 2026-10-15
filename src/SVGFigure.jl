@@ -2,7 +2,8 @@
 #
 # Coordinates are in mm from the top-left corner of the page; line widths and font sizes in pt.
 # Text is real SVG text in Arial (editable in Inkscape); `_{...}` and `^{...}` in a string give
-# sub- and superscripts (65% size, as in the published figures). PDF/PNG are exported with Inkscape.
+# sub- and superscripts (65% size, as in the published figures, but never below MIN_PT = 5 pt: 72% of 7 pt).
+# PDF/PNG are exported with Inkscape.
 module SVGFigure
 
 using Base64, Printf
@@ -84,15 +85,17 @@ function circle!(fig::Figure, x, y, r; fill="#000000", fill_opacity=1.0, stroke=
 end
 
 xmlesc(s) = replace(s, "&" => "&amp;", "<" => "&lt;", ">" => "&gt;")
-# "g_{b}=0.1" -> text with sub/superscript tspans
-function _rich(s::AbstractString)
+const MIN_PT = 5.0                                    # smallest text of the figures (pt), sub/superscripts included
+# "g_{b}=0.1" -> text with sub/superscript tspans (65% of `size` pt, at least MIN_PT)
+function _rich(s::AbstractString, size=7.0)
+    pct = max(65, ceil(Int, 100 * MIN_PT / size))
     out = IOBuffer(); i = firstindex(s)
     while i <= lastindex(s)
         c = s[i]
         if (c == '_' || c == '^') && i < lastindex(s) && s[nextind(s, i)] == '{'
             j = findnext('}', s, i)
             inner = s[nextind(s, nextind(s, i)):prevind(s, j)]
-            print(out, "<tspan style=\"font-size:65%;baseline-shift:$(c == '_' ? "sub" : "super")\">", xmlesc(inner), "</tspan>")
+            print(out, "<tspan style=\"font-size:$pct%;baseline-shift:$(c == '_' ? "sub" : "super")\">", xmlesc(inner), "</tspan>")
             i = nextind(s, j)
         else
             print(out, xmlesc(string(c))); i = nextind(s, i)
@@ -106,7 +109,7 @@ function text!(fig::Figure, x, y, s; size=7.0, anchor="start", weight="normal", 
     w = weight == "normal" ? "" : "font-weight:$weight;"
     it = style == "normal" ? "" : "font-style:$style;"
     print(fig.body, "<text x=\"$(fmt(x))\" y=\"$(fmt(y))\" style=\"font-family:$family;font-size:$(fmt(size*PT))px;$w$it" *
-          "text-anchor:$anchor;fill:$color\"$tf>", _rich(s), "</text>\n")
+          "text-anchor:$anchor;fill:$color\"$tf>", _rich(s, size), "</text>\n")
 end
 # PNG (bytes or file path) stretched to the box; pixelated=true keeps hard pixel edges (heatmaps)
 function image!(fig::Figure, x, y, w, h, png; pixelated=false, clip=nothing)

@@ -42,9 +42,9 @@ const COL = [2.5, 47.25, 92.0, 136.75]
 const AXL, AXW, AXH = 10.4, 29.35, 27.7                   # left offset, width and height of the axes
 const ROW2 = 43.57
 # artwork pieces and their shift from the published figure (mm)
-const PIECES = [("network", 3.2, 0.0), ("d_left", -39.883332, 0.0), ("d_right", -39.295832, 0.0), ("e", -36.3, 0.0)]
-const TASK = (x=4.814, y=3.6, w=20.566, h=31.3, rx=1.028, cx=15.029)   # task sketch: box and centre of its content
-const INPUT_X, ERROR_Y, ERROR_NODE_X = 26.5, 20.733, 37.643  # start of the input lines, error input: height, node centre
+const PIECES = [("network", 5.3167, 0.5292), ("d_left", -39.883332, 0.0), ("d_right", -39.295832, 0.0), ("e", -36.3, 0.0)]
+const TASK = (x=6.9307, y=4.1292, w=20.566, h=31.3, rx=1.028, cx=17.1457)   # task sketch: box and centre of its content
+const INPUT_X, ERROR_Y, ERROR_NODE_X = 28.6167, 21.2622, 39.7597  # start of the input lines, error input: height, node centre
 
 function load_results(dir)
     rd(f) = readdlm(joinpath(dir, f), ' ')
@@ -83,11 +83,11 @@ function legend!(fig, xs, y, items)
         text!(fig, x + 1.36, y, label)
     end
 end
-"Axes of b, c or f in the column starting at X, top at y; x and y labels."
-function cell_axes(fig, X, top, xlabel, ylabel; xlim, ylim, w=AXW)
+"Axes of b, c or f in the column starting at X, top at y; x and y labels (y label at X + ylabelx)."
+function cell_axes(fig, X, top, xlabel, ylabel; xlim, ylim, w=AXW, ylabelx=2.4)
     ax = Axes(fig; left=X + AXL, right=X + AXL + w, top, bottom=top + AXH, xlim, ylim)
     isempty(xlabel) || text!(fig, (ax.left + ax.right) / 2, ax.bottom + 6.0, xlabel; anchor="middle")
-    text!(fig, X + 2.4, (ax.top + ax.bottom) / 2, ylabel; anchor="middle", rotate=-90)
+    text!(fig, X + ylabelx, (ax.top + ax.bottom) / 2, ylabel; anchor="middle", rotate=-90)
     return ax
 end
 const TICKS = (width=0.66, ticklen=0.552)
@@ -143,7 +143,7 @@ function panel_a!(fig)
     text!(fig, xl, y + h - 4.5, "color"; anchor="middle", color=RULE_COLOR)
     text!(fig, xr, y + h - 4.5, "shape"; anchor="middle", color=RULE_SHAPE)
     text!(fig, cx, y + h - 1.4, "correct choice"; anchor="middle", color="#555555")
-    text!(fig, INPUT_X + 1.0, 24.55, "error signal")
+    text!(fig, INPUT_X + 1.0, ERROR_Y + 3.817, "error signal")
 end
 
 "b: maximum readout weight per network vs the self-coupling of that unit."
@@ -192,7 +192,7 @@ end
 "f: accuracy around a rule switch (bars as in Fig. S2)."
 function panel_f!(fig, st, X)
     letter!(fig, X, ROW2 + 2.63, "f")
-    ax = cell_axes(fig, X, ROW2 + 6.03, "", "accuracy"; xlim=(0.4, 5.6), ylim=(0.0, 1.0), w=29.4)
+    ax = cell_axes(fig, X, ROW2 + 6.03, "", "accuracy"; xlim=(0.4, 5.6), ylim=(0.0, 1.0), w=29.4, ylabelx=3.99)
     draw_switch!(ax, st)
     text!(fig, (ax.left + ax.right) / 2, ax.bottom + 7.1, "trial"; anchor="middle")
 end

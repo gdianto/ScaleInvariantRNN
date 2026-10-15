@@ -101,6 +101,13 @@ Classification: `fixed_point`; otherwise from the exponents and the recurrence o
 convergence time: `periodic_candidate` (λ1 not above 0, λ2 < 0, state recurring within 5%), `chaotic_candidate`
 (95% interval of λ1 above 0), `nonchaotic_nonperiodic` or `uncertain`.
 
+## bernardi2020/ (`scripts/figS2.jl` panel a)
+
+`accuracy_around_switch.tsv`: `trial` (last, 1st … 4th), `accuracy`, `error`: performance of monkeys on the last trial
+before a context switch and on the first four after it (mean and half-length of the error bar), read off the bar plot of
+Bernardi et al., Cell 183, 954 (2020), by pixel measurement (precision about 0.003). Experimental data: always read from
+`data/published/`, whatever `--data`.
+
 ## switch/ (`scripts/fig4.jl` panel f, `scripts/figS2.jl`)
 
 200 s-networks (g_b = 0.8, network k: seed 2026 + k), trained as in Fig. 4 and tested with each error signal halved with

@@ -1,9 +1,11 @@
 # Figure 5: heterogeneous self-couplings (s-network) vs heterogeneous time constants (τ0-network) in the WCST.
 #
 #   a, b  self-coupling distributions before/after learning (s-network, τ0-network), g_b = 0.8
-#   c     accuracy vs context feedback g_b (mean ± std over 50 networks)
-#   d     synaptic-matrix variation |ΔJ|/|J0| vs g_b (mean ± std over 50 networks)
-#   e     mean autocorrelation of the closed-loop network for each g_b (mean ± SEM over 50 networks)
+#   c     accuracy vs context feedback g_fb (mean ± std over 50 networks)
+#   d     synaptic-matrix variation |ΔJ|/|J0| vs g_fb (mean ± std over 50 networks)
+#   e     mean autocorrelation of the closed-loop network for g_fb = 0.1, 0.3, 0.6 (mean ± SEM over 50 networks), of
+#         the τ0-network (g_fb = 0.1), and the power-law fit of the g_fb = 0.1 curve as in the power-law test of the
+#         WCST runs (`fit_acf_power_law`, src/wcst.jl: least squares from the 5th sample, t = 0.02 s, on)
 #
 # Usage:
 #   julia scripts/fig5.jl                    # published WCST results (data/published/wcst)
@@ -12,14 +14,19 @@
 #   julia scripts/fig5.jl --data=generated   # figure from the data of an earlier run (or --data=FOLDER)
 # Other flags (--s, --tag, --force, --out): see README.md. The figure goes to figures/<data source>/fig5.
 #
-# Unlike the published panels (bands of mean/√n), the bands of c-d show the standard deviation.
+# Unlike the published panels (bands of mean/√n), the bands of c-d show the standard deviation; panel e shows three
+# values of g_fb (the published one: all of them), the time in s (published: sample index) and a power-law fit.
+# In the code and the data files, g_fb is called g_b (gb).
 include(joinpath(@__DIR__, "..", "src", "project.jl"))
 using DelimitedFiles, Statistics, Printf
 import Plots                                             # only for colour maps and histogram binning
 include(projectdir("src", "SVGFigure.jl")); using .SVGFigure
+include(projectdir("src", "reservoir.jl")); include(projectdir("src", "wcst.jl"))   # runs; fit_acf_power_law
 
 const GBACKS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
 const GB_PANELS = 0.8                                     # g_b of panels a-b
+const GB_E = [0.1, 0.3, 0.6]                              # g_b of panel e
+const SAMPLE = 0.005                                      # s between the samples of the autocorrelation (5 steps of 1 ms)
 
 # colours of the published figure
 hexcolor(c) = "#" * Plots.Colors.hex(Plots.Colors.RGB(c))
@@ -28,6 +35,7 @@ const S_COLOR = BLUES[3]                                                        
 const T_COLOR = hexcolor(Plots.cgrad(:Reds, 10, categorical=true, rev=true)[3])            # τ0-network
 const PRE_COLOR = hexcolor(Plots.cgrad(:batlow, 5, categorical=true)[2])
 const POST_COLOR = hexcolor(Plots.cgrad(:batlow, 5, categorical=true)[4])
+const FIT_COLOR = "#b8860b"                                # power-law fit of panel e (dark goldenrod)
 
 # ------------------------------------------------------------------ data
 function load_results(dir)
@@ -96,7 +104,7 @@ function fig5(data, out)
     xaxis!(ax; ticks=[0.2, 0.4, 0.6, 0.8], labels=["0.2", "0.4", "0.6", "0.8"], labeloffset=2.78, width=0.64)
     yaxis!(ax; ticks=[0.0, 0.5, 1.0], labels=["0", "0.5", "1.0"], labeloffset=1.03, baselineshift=0.79, width=0.64)
     text!(fig, 9.12, 65.45, "accuracy"; rotate=-90)
-    text!(fig, 28.41, 78.08, "g_{b}")
+    text!(fig, (ax.left + ax.right) / 2, 78.08, "g_{fb}"; anchor="middle")
     rect!(fig, 34.43, 67.03, 5.18, 5.18; fill="#ffffff")
     legend_swatch!(30.87, 32.89, 69.464, 71.13, S_COLOR);  text!(fig, 33.39, 70.97, "s")
     legend_swatch!(36.74, 38.76, 69.49, 71.15, T_COLOR);   text!(fig, 39.26, 71.04, "τ_{0}")
@@ -112,45 +120,51 @@ function fig5(data, out)
         plot!(ax, GBACKS, m; color=c, width=0.67)
     end
     xaxis!(ax; ticks=[0.2, 0.4, 0.6, 0.8], labels=["0.2", "0.4", "0.6", "0.8"], labeloffset=2.76, width=0.67)
-    yaxis!(ax; ticks=10 .^ [0.3, 0.0, -0.3, -0.6], labels=["10^{0.3}", "10^{0}", "10^{-0.3}", "10^{-0.6}"],
-           labelanchor="middle", labeloffset=60.173 - 57.21, baselineshift=0.0, width=0.67)
+    yaxis!(ax; ticks=[2.0, 1.0, 0.5, 0.25], labels=["2", "1", "0.5", "0.25"], labeloffset=1.1, baselineshift=0.8, width=0.67)
     text!(fig, 53.29, 73.20, "synaptic matrix variation"; rotate=-90)
-    text!(fig, 72.04, 77.83, "g_{b}")
+    text!(fig, (ax.left + ax.right) / 2, 77.83, "g_{fb}"; anchor="middle")
 
-    # ---- e: autocorrelation (x = saved sample index, as in the published panel)
+    # ---- e: autocorrelation vs time (sample k at (k - 1) * SAMPLE; the first one, t = 0, is left out of the log axis)
     letter!(9.28, 85.84, "e"; size=9.56)
     ax = Axes(fig; left=35.917, right=81.364, top=89.061, bottom=113.642, xscale=:log10, yscale=:log10,
-              xlim=lim_from(1.0, 37.203, 100.0, 63.178, 35.917, 81.364; log=true),
-              ylim=lim_from(1.0, 89.061, 0.01, 111.216, 113.642, 89.061; log=true))
-    for (k, g) in enumerate(GBACKS)
+              xlim=(0.004, 0.004 * 10^3.5), ylim=lim_from(1.0, 89.061, 0.01, 111.216, 113.642, 89.061; log=true))
+    times(m) = (1:length(m)-1) .* SAMPLE
+    for g in GB_E
         a = data.acfm[g]; m = vec(mean(a, dims=1)); se = vec(std(a, dims=1)) ./ sqrt(size(a, 1))
-        c = BLUES[k]; x = 1:length(m)
-        band!(ax, x, max.(m .- se, 1e-12), m .+ se; fill=c, fill_opacity=0.5)
-        plot!(ax, x, m; color=c, width=0.64)
+        c = BLUES[findfirst(==(g), GBACKS)]
+        band!(ax, times(m), max.(m[2:end] .- se[2:end], 1e-12), m[2:end] .+ se[2:end]; fill=c, fill_opacity=0.5)
+        plot!(ax, times(m), m[2:end]; color=c, width=0.64)
     end
     m_tau = vec(mean(data.acfm_tau, dims=1))
-    plot!(ax, 1:length(m_tau), max.(m_tau, 1e-300); color=T_COLOR, width=0.64)
-    xaxis!(ax; ticks=[1.0, 100.0], labels=["10^{0}", "10^{2}"], labeloffset=3.28, width=0.64)
+    plot!(ax, times(m_tau), max.(m_tau[2:end], 1e-300); color=T_COLOR, width=0.64)
+    m_fit = vec(mean(data.acfm[GB_E[1]], dims=1))
+    A, α = fit_acf_power_law((0:length(m_fit)-1) .* SAMPLE, m_fit)      # from t = 0.02 s on, as the power-law test
+    @printf("power-law fit of C(t), g_b = %g, t >= 0.02 s: C = %.4f t^%.3f\n", GB_E[1], A, α)
+    tf = [(1 / A)^(1 / α), ax.xlim[2]]                    # as Fig. 1f: from where the line enters the axes to the right edge
+    plot!(ax, tf, A .* tf .^ α; color=FIT_COLOR, width=0.9, dash=(6.0, 3.75), cap="round")
+    xaxis!(ax; ticks=[0.01, 0.1, 1.0, 10.0], labels=["10^{-2}", "10^{-1}", "10^{0}", "10^{1}"], labeloffset=3.28, width=0.64)
     yaxis!(ax; ticks=[1.0, 0.1, 0.01], labels=["10^{0}", "10^{-1}", "10^{-2}"], labelanchor="middle",
            labeloffset=35.917 - 33.26, baselineshift=0.64, width=0.64)
     text!(fig, 29.65, 103.75, "C(t)"; rotate=-90)
     text!(fig, 55.37, 119.52, "time, t [s]")
-    # legend swatches: 0.9 mm lines, 2.24 pt thick, with flattened round caps (0.1 mm)
-    swatch!(y, c) = rect!(fig, 13.209, y - 0.395, 1.1, 0.79; fill=c, rx=0.1, ry=0.395)
-    for (k, g) in enumerate(GBACKS)
-        y = 89.187 + (k - 1) * 3.0384
-        swatch!(y, BLUES[k])
-        text!(fig, 15.16, 89.61 + (k - 1) * 3.0875, @sprintf("g_{b}=%g", g))
+    # legend, centred on the axes: swatches 0.9 mm lines, 2.24 pt thick, with flattened round caps (0.1 mm); dashed fit
+    swatch!(y, c) = rect!(fig, 11.209, y - 0.395, 1.1, 0.79; fill=c, rx=0.1, ry=0.395)
+    nrows = length(GB_E) + 2                                                  # g_fb values, τ0-network, fit
+    row(k) = (r = k - 1 + (9 - nrows) / 2; (89.187 + r * 3.0384, 89.61 + r * 3.0875))   # swatch centre, text baseline
+    for (k, g) in enumerate(GB_E)
+        swatch!(row(k)[1], BLUES[findfirst(==(g), GBACKS)])
+        text!(fig, 13.16, row(k)[2], @sprintf("g_{fb}=%g", g))
     end
-    swatch!(113.494, T_COLOR)
-    text!(fig, 15.16, 89.61 + 8 * 3.0875, "g_{b}=0.1 (τ_{0})")
+    swatch!(row(nrows - 1)[1], T_COLOR)
+    text!(fig, 13.16, row(nrows - 1)[2], "g_{fb}=0.1 (τ_{0})")
+    line!(fig, [10.86, 12.62], fill(row(nrows)[1], 2); color=FIT_COLOR, width=0.9, dash=(2.0, 1.0), cap="butt")
+    text!(fig, 13.16, row(nrows)[2], "power law fit")
 
     return save(fig, out)
 end
 
 # ------------------------------------------------------------------ main
 if hasflag("simulate")
-    include(projectdir("src", "reservoir.jl")); include(projectdir("src", "wcst.jl"))
     run_wcst_sweep(; variants=["s", "tau"], g_contexts=GBACKS, reps=50, outdir=new_data_dir("wcst"))
 end
 fig5(load_results(data_dir("wcst")), figure_path("fig5"))

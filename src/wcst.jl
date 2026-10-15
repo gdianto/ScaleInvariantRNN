@@ -209,6 +209,8 @@ function run_test!(closed, net, input, W_out, trials, timing, stim, spans, dt; N
 end
 
 power_law(t, p) = p[1] .* (t .^ p[2])
+"Power-law fit p[1] t^p[2] (least squares) of an autocorrelation `acf` sampled at `t`, from sample `i0` on."
+fit_acf_power_law(t, acf; i0=5) = curve_fit(power_law, t[i0:end], acf[i0:end], [1.0, -1.0]).param
 
 """
 Mean autocorrelation of the closed-loop network started from `n_starts` random states (saved every 5 steps
@@ -230,7 +232,7 @@ function power_law_test(closed, N, τu, dt; n_starts=100, i0=5)
         acf_mean += acf
     end
     acf_mean ./= n_starts
-    params = round.(curve_fit(power_law, t[i0:end], acf_mean[i0:end], [1.0, -1.0]).param, digits=2)
+    params = round.(fit_acf_power_law(t, acf_mean; i0), digits=2)
     return (; t, acf_mean, r, params, i0)
 end
 

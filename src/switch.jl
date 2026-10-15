@@ -9,6 +9,7 @@ const SWITCH = (g_b=0.8, p_values=[0.0, 0.25, 0.5, 0.75], nets=200, seed=2026, m
 const SWITCH_POSITIONS = ["last", "1^{st}", "2^{nd}", "3^{rd}", "4^{th}"]
 const SWITCH_COLOR = "#2e8b57"          # bars: the response readout of Fig. 4b (accuracy of the card choice)
 const CONTEXT_COLOR = "#800080"         # rule switch: the context readout of Fig. 4b
+const MONKEY_COLOR = "#7f7f7f"          # bars of the monkeys (Fig. S2a)
 
 switch_hits_file(dir, p; g_b=SWITCH.g_b) = joinpath(dir, "hits_wcst_s-gb_$(g_b)-phalf_$(p).txt")
 switch_rules_file(dir; g_b=SWITCH.g_b) = joinpath(dir, "rules_wcst_s-gb_$(g_b).txt")
@@ -69,16 +70,16 @@ end
 
 """
 Bars of the accuracy (mean ± SEM) on the last trial before a rule switch and on the first four after it, in the axes
-`ax` (xlim (0.4, 5.6), ylim (0, 1)), with the chance level and the switch; `label`: write "rule switch". The same panel
-in Fig. 4f and Fig. S2.
+`ax` (xlim (0.4, 5.6), ylim (0, 1)), with the chance level and the switch; `label`: write "rule switch"; `ylabels`: tick
+labels of the y axis. The same panel in Fig. 4f and Fig. S2.
 """
-function draw_switch!(ax, stats; label=true)
+function draw_switch!(ax, stats; label=true, ylabels=true, color=SWITCH_COLOR)
     fig = ax.fig
     w = 0.34                                                                 # half-width of a bar
     for k in 1:5
         x0, x1, y = xmm(ax, k - w), xmm(ax, k + w), ymm(ax, stats.m[k])
-        rect!(fig, x0, y, x1 - x0, ax.bottom - y; fill=SWITCH_COLOR, fill_opacity=0.35)
-        line!(fig, [x0, x1], [y, y]; color=SWITCH_COLOR, width=0.69, cap="butt")
+        rect!(fig, x0, y, x1 - x0, ax.bottom - y; fill=color, fill_opacity=0.35)
+        line!(fig, [x0, x1], [y, y]; color, width=0.69, cap="butt")
         X, m, se = xmm(ax, k), stats.m[k], stats.se[k]                       # error bar
         line!(fig, [X, X], [ymm(ax, m - se), ymm(ax, m + se)]; width=0.45, cap="butt")
         for v in (m - se, m + se)
@@ -90,6 +91,6 @@ function draw_switch!(ax, stats; label=true)
     line!(fig, [X, X], [ax.bottom, ax.top - 1.0]; color=CONTEXT_COLOR, width=0.8, cap="butt")
     label && text!(fig, X, ax.top - 1.8, "rule switch"; anchor="middle", color=CONTEXT_COLOR)
     xaxis!(ax; ticks=1:5, labels=SWITCH_POSITIONS, ticklen=0.0, labeloffset=3.13, width=0.66)
-    yaxis!(ax; ticks=[0.0, 0.5, 1.0], labels=["0", "0.5", "1.0"], labeloffset=1.03, baselineshift=0.79, width=0.66,
+    yaxis!(ax; ticks=[0.0, 0.5, 1.0], labels=ylabels ? ["0", "0.5", "1.0"] : fill("", 3), labeloffset=1.03, baselineshift=0.79, width=0.66,
            ticklen=0.552)
 end

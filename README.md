@@ -17,7 +17,7 @@ scale-invariant (power-law) memory, without criticality. The repository covers:
 | 4 | Wisconsin Card Sorting Test (WCST): strategy of the heterogeneous network | `scripts/fig4.jl` |
 | 5 | WCST: heterogeneous self-couplings (s-network) vs heterogeneous time constants (τ0-network) | `scripts/fig5.jl` |
 | S1 | the autonomous network relaxes to a fixed point: activity, fixed-point residual, Lyapunov exponents for g around 0.4 | `scripts/figS1.jl` |
-| S2 | WCST: accuracy around a rule switch when the error signal is halved with probability p | `scripts/figS2.jl` |
+| S2 | WCST: accuracy around a rule switch, monkeys (Bernardi et al. 2020) and the model with the error signal halved with probability p | `scripts/figS2.jl` |
 
 Each script writes the complete figure (SVG, PDF and PNG): Figs. 1-3 and 5 at the published size and layout, Fig. 4
 in its revised layout (with the rule-switch panel f), and the supplementary Figs. S1-S2. By default the figures are
@@ -171,11 +171,11 @@ The published values were computed with an earlier NumPy implementation of the s
 Julia cannot reproduce digit by digit; `--simulate` gives values within 2 SEM of them. The simulation is
 reproducible for a given seed, whatever the number of threads.
 
-### Figure 4: WCST strategy of the s-network (g_b = 0.8)
+### Figure 4: WCST strategy of the s-network (g_fb = 0.8)
 
 ```bash
 julia scripts/fig4.jl                      # published data
-julia -t 16 scripts/fig4.jl --simulate     # only the runs of Fig. 4: 50 s-network runs at g_b = 0.8 (~1 CPU-hour)
+julia -t 16 scripts/fig4.jl --simulate     # only the runs of Fig. 4: 50 s-network runs at g_fb = 0.8 (~1 CPU-hour)
                                            # and the switch runs of panel f and Fig. S2 (~5 min on 16 threads)
 julia scripts/fig4.jl --gaussian           # panel b with Gaussian fits instead (figure fig4_gaussian)
 ```
@@ -201,15 +201,16 @@ julia -t 16 scripts/fig5.jl --simulate     # the whole sweep (~20 CPU-hours)
 
 | Panel | Content (all from `wcst/`) |
 |---|---|
-| a, b | self-couplings before and after learning, s-network and τ0-network, g_b = 0.8 |
-| c | accuracy vs context feedback g_b, mean ± std over 50 networks |
-| d | change of the synaptic matrix \|ΔJ\|/\|J0\| vs g_b, mean ± std over 50 networks |
-| e | mean autocorrelation of the closed-loop network for each g_b (mean ± SEM); x axis: samples, one every 5 ms |
+| a, b | self-couplings before and after learning, s-network and τ0-network, g_fb = 0.8 |
+| c | accuracy vs context feedback g_fb, mean ± std over 50 networks |
+| d | change of the synaptic matrix \|ΔJ\|/\|J0\| vs g_fb, mean ± std over 50 networks |
+| e | mean autocorrelation of the closed-loop network for g_fb = 0.1, 0.3, 0.6 (mean ± SEM) and of the τ0-network (g_fb = 0.1), with the power-law fit of the g_fb = 0.1 curve used by the power-law test of the WCST runs (least squares from t = 0.02 s on; C ∝ t^−1.01 for the published data) |
 
 WCST model: N = 500, g = 0.4. The s-network has the self-couplings of Fig. 1 and τ0 = 0.01 s; the τ0-network has no
 self-coupling and τ0 evenly spaced in [0.01, 0.05] s. Each run has 20 transient, 80 learning and 100 test trials, a
-20 % probability of rule change per trial, inputs g_cards = 1.0 and g_error = 1.75, a ridge readout (β = 0.01) fed
-back into the network, and a power-law test of the closed-loop network from 100 random initial states.
+20 % probability of rule change per trial, inputs g_card = 1.0 and g_error = 1.75, a ridge readout (β = 0.01) fed
+back into the network with the context feedback gain g_fb, and a power-law test of the closed-loop network from 100
+random initial states. In the code and in the data files g_fb is called g_b (`gb`).
 
 ### Supplementary Figure S1: the autonomous network relaxes to a fixed point
 
@@ -247,10 +248,11 @@ julia -t 16 scripts/figS2.jl --simulate            # 200 networks x 4 values of 
 
 | Panel | Content | Source |
 |---|---|---|
-| a–d | accuracy on the last trial before a rule switch and on the first four after it, mean ± SEM over 200 s-networks (g_b = 0.8), for p = 0, 0.25, 0.5, 0.75 | `switch/` |
+| a | monkeys: performance on the last trial before a context switch and on the first four after it, read off the figure of Bernardi et al., Cell 2020 | `bernardi2020/` |
+| b | model: accuracy on the last trial before a rule switch and on the first four after it, mean ± SEM over 200 s-networks (g_fb = 0.8), for p = 0, 0.25, 0.5, 0.75 (one plot per p) | `switch/` |
 
 The networks are trained as in Fig. 4 (full error signal); during the test each error signal is halved with
-probability p (`run_wcst_switch`). Network k has the seed 2026 + k for every p, so the four panels show the same
+probability p (`run_wcst_switch`). Network k has the seed 2026 + k for every p, so the four plots of b show the same
 networks, tasks and trainings. Only the switches between two blocks of at least 4 test trials are counted (977
 switches), so that every bar averages the same switches. Accuracy = fraction of correct responses (no error signal).
 
@@ -312,7 +314,7 @@ src/
   SVGFigure.jl            figure builder (layout in mm, Arial text, SVG/PDF/PNG)
 data/
   README.md               layout and file formats
-  published/              self_couplings.txt, fig1/, fig2/, fig3/, wcst/, switch/, figS1/: data of the figures
+  published/              self_couplings.txt, fig1/, fig2/, fig3/, wcst/, switch/, figS1/, bernardi2020/: data of the figures
   generated/              data computed by the scripts (not under version control)
 assets/                   artwork of the published figures, embedded by the scripts (Fig. 4: one file per piece)
 figures/                  rendered figures; published/ (from data/published) is under version control
