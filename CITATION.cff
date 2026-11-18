@@ -1,0 +1,37 @@
+cff-version: 1.2.0
+message: "If you use this code or data, please cite the paper below and this repository."
+title: "ScaleInvariantRNN: code and data for 'Heterogeneous self-couplings enable scale-invariant memory and cognitive flexibility without criticality'"
+type: software
+authors:
+  - family-names: Damiani
+    given-names: Francesco
+  - family-names: Di Antonio
+    given-names: Gabriele
+  - family-names: Epifanio
+    given-names: Jacopo
+  - family-names: Vinci
+    given-names: Gianni Valerio
+  - family-names: Galluzzi
+    given-names: Andrea
+  - family-names: Mattia
+    given-names: Maurizio
+repository-code: "https://github.com/gdianto/ScaleInvariantRNN"
+license: MIT
+version: 1.0.0
+date-released: 2026-11-18
+preferred-citation:
+  type: article
+  title: "Heterogeneous self-couplings enable scale-invariant memory and cognitive flexibility without criticality"
+  authors:
+    - family-names: Damiani
+      given-names: Francesco
+    - family-names: Di Antonio
+      given-names: Gabriele
+    - family-names: Epifanio
+      given-names: Jacopo
+    - family-names: Vinci
+      given-names: Gianni Valerio
+    - family-names: Galluzzi
+      given-names: Andrea
+    - family-names: Mattia
+      given-names: Maurizio

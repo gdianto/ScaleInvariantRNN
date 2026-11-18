@@ -1,9 +1,9 @@
-# Scale-invariant dynamics and context-dependent computation in heterogeneous neural networks
+# Heterogeneous self-couplings enable scale-invariant memory and cognitive flexibility without criticality
 
 Code and data to reproduce the results and figures of
 
 > F. Damiani, G. Di Antonio, J. Epifanio, G. V. Vinci, A. Galluzzi, M. Mattia,
-> *Scale-invariant dynamics and context-dependent computation in heterogeneous neural networks without criticality.*
+> *Heterogeneous self-couplings enable scale-invariant memory and cognitive flexibility without criticality.*
 
 The model is a recurrent rate network, τ0 dr_i/dt = −r_i + tanh(s_i r_i + Σ_j W_ij r_j + inputs), in which every
 unit has its own self-coupling s_i. A suitable distribution of s gives a broad distribution of unit timescales and a
@@ -305,3 +305,12 @@ data/
 assets/                   artwork of the published figures, embedded by the scripts (Fig. 4: one file per piece)
 figures/                  rendered figures; published/ (from data/published) is under version control
 ```
+
+## Citation
+
+If you use this code or data, please cite the paper above. Citation metadata for the paper and for this repository
+are in `CITATION.cff` (GitHub: "Cite this repository"); the DOI will be added after publication.
+
+## License
+
+MIT License (`LICENSE`): it covers the code, the data (`data/`) and the figures and artwork (`figures/`, `assets/`).

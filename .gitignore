@@ -1,6 +1,9 @@
 # Manuscript source and its figure files (not part of the repository)
 paper/
 
+# Local instructions for the coding assistant
+CLAUDE.md
+
 # Data computed by the scripts (the published data are in data/published/)
 data/generated/
 
