@@ -1,15 +1,10 @@
-# Accuracy of the s-network (g_b = 0.8) around a rule switch of the WCST (Fig. 4f, Fig. S2): result files, statistics
-# and the bar panel. During the test each error pulse is halved with probability p (`run_wcst_switch`, src/wcst.jl);
-# network k has the seed SWITCH.seed + k for every p (paired runs: same network, task and training).
-# The panel needs SVGFigure (include src/SVGFigure.jl first).
+# Accuracy of the s-network (g_b = 0.8) around a rule switch of the WCST (Fig. 4f): result files and statistics.
+# During the test each error pulse is halved with probability p (`run_wcst_switch`, src/wcst.jl); network k has the seed
+# SWITCH.seed + k for every p (paired runs: same network, task and training).
 
 using DelimitedFiles, Statistics, Printf
 
-const SWITCH = (g_b=0.8, p_values=[0.0, 0.25, 0.5, 0.75], nets=200, seed=2026, min_block=4)
-const SWITCH_POSITIONS = ["last", "1^{st}", "2^{nd}", "3^{rd}", "4^{th}"]
-const SWITCH_COLOR = "#2e8b57"          # bars: the response readout of Fig. 4b (accuracy of the card choice)
-const CONTEXT_COLOR = "#800080"         # rule switch: the context readout of Fig. 4b
-const MONKEY_COLOR = "#7f7f7f"          # bars of the monkeys (Fig. S2a)
+const SWITCH = (g_b=0.8, p_values=[0.0, 0.75], nets=200, seed=2026, min_block=4)
 
 switch_hits_file(dir, p; g_b=SWITCH.g_b) = joinpath(dir, "hits_wcst_s-gb_$(g_b)-phalf_$(p).txt")
 switch_rules_file(dir; g_b=SWITCH.g_b) = joinpath(dir, "rules_wcst_s-gb_$(g_b).txt")
@@ -17,7 +12,7 @@ switch_rules_file(dir; g_b=SWITCH.g_b) = joinpath(dir, "rules_wcst_s-gb_$(g_b).t
 "Responses (1 correct, 0 wrong; networks × test trials) for halving probability `p`, and the rules (±1)."
 function load_switch(dir, p)
     isfile(switch_hits_file(dir, p)) || error("no per-trial WCST results for p = $p in $dir: choose a folder with --data, " *
-                                              "or run julia -t 16 scripts/figS2.jl --simulate")
+                                              "or run julia -t 16 scripts/fig4.jl --simulate")
     return (hits=readdlm(switch_hits_file(dir, p), ' ', Int), rules=readdlm(switch_rules_file(dir), ' ', Int))
 end
 
@@ -66,31 +61,4 @@ function switch_stats(data, p)
     @printf("p = %g: %d networks, %d switches; accuracy %s; all test trials %.3f; error within a block %.3f ± %.3f; switch after an error %.3f ± %.3f\n",
             p, size(a, 1), sum(n), join([@sprintf("%.3f", x) for x in m], " "), mean(data.hits), meansem(be)..., meansem(sh)...)
     return (; m, se)
-end
-
-"""
-Bars of the accuracy (mean ± SEM) on the last trial before a rule switch and on the first four after it, in the axes
-`ax` (xlim (0.4, 5.6), ylim (0, 1)), with the chance level and the switch; `label`: write "rule switch"; `ylabels`: tick
-labels of the y axis. The same panel in Fig. 4f and Fig. S2.
-"""
-function draw_switch!(ax, stats; label=true, ylabels=true, color=SWITCH_COLOR)
-    fig = ax.fig
-    w = 0.34                                                                 # half-width of a bar
-    for k in 1:5
-        x0, x1, y = xmm(ax, k - w), xmm(ax, k + w), ymm(ax, stats.m[k])
-        rect!(fig, x0, y, x1 - x0, ax.bottom - y; fill=color, fill_opacity=0.35)
-        line!(fig, [x0, x1], [y, y]; color, width=0.69, cap="butt")
-        X, m, se = xmm(ax, k), stats.m[k], stats.se[k]                       # error bar
-        line!(fig, [X, X], [ymm(ax, m - se), ymm(ax, m + se)]; width=0.45, cap="butt")
-        for v in (m - se, m + se)
-            line!(fig, [X - 0.3, X + 0.3], [ymm(ax, v), ymm(ax, v)]; width=0.45, cap="butt")
-        end
-    end
-    plot!(ax, [0.4, 5.6], [0.5, 0.5]; color="#000000", width=0.45, dash=(1.5, 1.0), cap="butt")    # chance
-    X = xmm(ax, 1.5)
-    line!(fig, [X, X], [ax.bottom, ax.top - 1.0]; color=CONTEXT_COLOR, width=0.8, cap="butt")
-    label && text!(fig, X, ax.top - 1.8, "rule switch"; anchor="middle", color=CONTEXT_COLOR)
-    xaxis!(ax; ticks=1:5, labels=SWITCH_POSITIONS, ticklen=0.0, labeloffset=3.13, width=0.66)
-    yaxis!(ax; ticks=[0.0, 0.5, 1.0], labels=ylabels ? ["0", "0.5", "1.0"] : fill("", 3), labeloffset=1.03, baselineshift=0.79, width=0.66,
-           ticklen=0.552)
 end

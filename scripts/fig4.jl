@@ -6,20 +6,23 @@
 #   c     sorted self-couplings before learning, and after learning (mean ± std over 50 networks)
 #   d, e  state space of one network realization (PCA projections, hysteresis)
 #   f     accuracy on the last trial before a rule switch and on the first four after it when, during the test, each
-#         error signal is halved with probability 0.5 (mean ± SEM over 200 networks; other probabilities in Fig. S2)
+#         error signal is halved with probability p = 0 (black) or 0.75 (grey) (mean ± SEM over 200 networks)
 #
 # Usage:
 #   julia scripts/fig4.jl                    # published data (data/published/wcst, data/published/switch)
 #   julia -t 16 scripts/fig4.jl --simulate   # only the runs of Fig. 4: 50 s-network runs at g_b = 0.8 (~1 CPU-hour) and the
-#                                            # switch runs of panel f and Fig. S2 (~5 min) -> data/generated/{wcst,switch}
+#                                            # switch runs of panel f (~3 min) -> data/generated/{wcst,switch}
 #                                            # (scripts/fig5.jl --simulate makes the whole WCST sweep)
+#     --nets=200                             # networks of the switch runs (network k: seed 2026 + k)
+#     --switch-only                          # only the switch runs (e.g. after scripts/fig5.jl --simulate)
 #   julia scripts/fig4.jl --data=generated   # figure from the data of an earlier run (or --data=FOLDER)
 #   julia scripts/fig4.jl --gaussian         # panel b with Gaussian fits (figure fig4_gaussian)
 # Other flags (--s, --tag, --force, --out): see README.md. The figure goes to figures/<data source>/fig4.
 #
-# Layout: four columns 41.25 mm wide with 3.5 mm gutters; a (two columns), b, c on top; d (two columns), e, f below.
-# The reservoir of panel a and panels d, e (one unseeded network) are artwork: pieces of the published Fig. 4 in its
-# page coordinates (assets/fig4_artwork_*.svg), placed here with a shift. The task sketch of panel a is drawn here.
+# Layout (178 x 88 mm, as the manuscript): four columns 41.25 mm wide with 3.5 mm gutters; a (two columns), b, c on
+# top; d (two columns), e, f below. The reservoir of panel a and panels d, e (one unseeded network) are artwork: pieces
+# of the published Fig. 4 in its page coordinates (assets/fig4_artwork_*.svg), placed here with a shift; the reservoir
+# includes the retouches of the manuscript version. The task sketch of panel a is drawn here.
 include(joinpath(@__DIR__, "..", "src", "project.jl"))
 using DelimitedFiles, Statistics, LinearAlgebra, Printf
 import Plots, Distributions                               # colour maps; Gaussian fit
@@ -38,13 +41,15 @@ const RULE_COLOR, RULE_SHAPE = "#3399ff", "#ff4c4c"      # context: color, shape
 const ERROR_RED = "#d95b4f"
 
 # grid (mm): columns, axes of b, c, f inside a column, rows
-const COL = [2.5, 47.25, 92.0, 136.75]
+const COL = [0.0, 44.75, 89.5, 134.25]
 const AXL, AXW, AXH = 10.4, 29.35, 27.7                   # left offset, width and height of the axes
 const ROW2 = 43.57
 # artwork pieces and their shift from the published figure (mm)
-const PIECES = [("network", 5.3167, 0.5292), ("d_left", -39.883332, 0.0), ("d_right", -39.295832, 0.0), ("e", -36.3, 0.0)]
-const TASK = (x=6.9307, y=4.1292, w=20.566, h=31.3, rx=1.028, cx=17.1457)   # task sketch: box and centre of its content
-const INPUT_X, ERROR_Y, ERROR_NODE_X = 28.6167, 21.2622, 39.7597  # start of the input lines, error input: height, node centre
+const PIECES = [("network", 2.8167, 0.5292), ("d_left", -42.383332, 0.0), ("d_right", -41.795832, 0.0), ("e", -38.8, 0.0)]
+const TASK = (x=4.4307, y=4.1292, w=20.566, h=31.3, rx=1.028, cx=14.6457)   # task sketch: box and centre of its content
+const INPUT_X, ERROR_Y, ERROR_NODE_X = 26.6167, 21.2622, 37.7597  # start of the input lines, error input: height, node centre
+const P_STYLE = Dict(0.0 => (line="#2b2a29", mark="#000000", bar=0.45), 0.75 => (line="#808080", mark="#808080", bar=0.5))
+const CONTEXT_COLOR = "#800080"                           # rule switch: the context readout of panel b
 
 function load_results(dir)
     rd(f) = readdlm(joinpath(dir, f), ' ')
@@ -108,16 +113,17 @@ function branch!(fig, x0, y0, x1, y1; color, width=0.75, head=1.0, half=0.5)
     polygon!(fig, [x1, x1 - half, x1 + half], [y1, yb, yb]; fill=color)
 end
 
-"Polyline through `pts` with its corners rounded (radius r)."
-function rounded_line!(fig, pts; r, color, width)
-    d = IOBuffer(); print(d, "M ", pts[1][1], " ", pts[1][2])
+"Polyline through `pts` with its corners rounded (radius r), then stretched vertically by `stretch` about the first point."
+function rounded_line!(fig, pts; r, color, width, stretch=1.0)
+    Y(y) = pts[1][2] + stretch * (y - pts[1][2])
+    d = IOBuffer(); print(d, "M ", pts[1][1], " ", Y(pts[1][2]))
     for k in 2:length(pts)-1
         (x0, y0), (x1, y1), (x2, y2) = pts[k-1], pts[k], pts[k+1]
         l1, l2 = hypot(x1 - x0, y1 - y0), hypot(x2 - x1, y2 - y1); rk = min(r, l1 / 2, l2 / 2)
-        print(d, " L ", x1 - rk * (x1 - x0) / l1, " ", y1 - rk * (y1 - y0) / l1,
-                 " Q ", x1, " ", y1, " ", x1 + rk * (x2 - x1) / l2, " ", y1 + rk * (y2 - y1) / l2)
+        print(d, " L ", x1 - rk * (x1 - x0) / l1, " ", Y(y1 - rk * (y1 - y0) / l1),
+                 " Q ", x1, " ", Y(y1), " ", x1 + rk * (x2 - x1) / l2, " ", Y(y1 + rk * (y2 - y1) / l2))
     end
-    print(d, " L ", pts[end][1], " ", pts[end][2])
+    print(d, " L ", pts[end][1], " ", Y(pts[end][2]))
     raw!(fig, "<path d=\"$(String(take!(d)))\" fill=\"none\" stroke=\"$color\" stroke-width=\"$(width * PT)\" " *
               "stroke-linecap=\"butt\" stroke-linejoin=\"round\"/>")
 end
@@ -127,7 +133,7 @@ end
 function panel_a!(fig)
     xp, y = INPUT_X + 5.6, ERROR_Y                        # error input with a pulse, as the card inputs; under its node
     rounded_line!(fig, [(INPUT_X, y), (xp - 0.75, y), (xp - 0.5, y - 0.9), (xp + 0.5, y - 0.9), (xp + 0.75, y),
-                        (ERROR_NODE_X, y)]; r=0.3, color=ERROR_RED, width=0.95)
+                        (ERROR_NODE_X, y)]; r=0.3, color=ERROR_RED, width=0.75, stretch=1.9447)   # pulse 1.75 mm high
     for (name, dx, dy) in PIECES
         place!(fig, assetsdir("fig4_artwork_$name.svg"), dx, dy)
     end
@@ -159,9 +165,9 @@ function panel_b!(fig, data, X; kde)
     zlims = extrema(vcat(vec(gc[3]), vec(gr[3])))                          # shared colour range of the subplot
     levels = range(zlims..., length=n_levels + 2)[2:end-1]
     for ((x, y), (gx, gy, Z), cmap, c) in (((xc, yc), gc, CMAP_CONTEXT, "#800080"), ((xr, yr), gr, CMAP_RESPONSE, "#2e8b57"))
-        for l in levels
+        for (i, l) in enumerate(levels)                                    # the two outer levels opaque
             k = round(Int, 255 * (l - zlims[1]) / (zlims[2] - zlims[1]))      # GR colour index of the level
-            contour!(ax, gx, gy, Z, l; color=hexcolor(cmap[k / 255]), width=0.66, opacity=line_opacity)
+            contour!(ax, gx, gy, Z, l; color=hexcolor(cmap[k / 255]), width=0.66, opacity=i <= 2 ? 1.0 : line_opacity)
         end
         scatter!(ax, x, y; r, fill=c, fill_opacity=marker_opacity, stroke=outline, width=0.25)
     end
@@ -189,21 +195,42 @@ function panel_c!(fig, data, X)
     legend!(fig, [xm - 7.2, xm + 0.6], 4.4, [(:dot, "#205e60", "pre", 0.5), (:dot, POST_COLOR, "post")])
 end
 
-"f: accuracy around a rule switch (bars as in Fig. S2)."
-function panel_f!(fig, st, X)
+"f: accuracy (mean ± SEM) on the last trial before a rule switch and on the first four after it, one line per p."
+function panel_f!(fig, stats, X)
     letter!(fig, X, ROW2 + 2.63, "f")
     ax = cell_axes(fig, X, ROW2 + 6.03, "", "accuracy"; xlim=(0.4, 5.6), ylim=(0.0, 1.0), w=29.4, ylabelx=3.99)
-    draw_switch!(ax, st)
-    text!(fig, (ax.left + ax.right) / 2, ax.bottom + 7.1, "trial"; anchor="middle")
+    plot!(ax, [0.4, 5.6], [0.5, 0.5]; color="#000000", width=0.45, dash=(2.4, 2.4), cap="butt")      # chance
+    X1 = xmm(ax, 1.5)                                                                               # rule switch
+    line!(fig, [X1, X1], [ax.bottom, ax.top]; color="#808080", width=0.75, dash=(0.75, 0.75), cap="butt")
+    text!(fig, X1, ax.top - 1.8, "rule switch"; anchor="middle", color=CONTEXT_COLOR)
+    xaxis!(ax; ticks=1:5, labels=["", "1", "2", "3", "4"], labeloffset=3.13, TICKS...)
+    text!(fig, xmm(ax, 1), ax.bottom + 3.13, "last"; anchor="middle", color="#2b2a29")             # as in the manuscript
+    yaxis!(ax; ticks=0:0.25:1, labels=["0", "", "0.5", "", "1.0"], labeloffset=1.03, baselineshift=0.79, TICKS...)
+    text!(fig, (ax.left + ax.right) / 2, ax.bottom + 6.25, "trial position"; anchor="middle")
+    for (p, st) in reverse(stats)                                                                   # p = 0 on top
+        c = P_STYLE[p]
+        for k in 1:5                                                                                # error bars
+            x, lo, hi = xmm(ax, k), ymm(ax, st.m[k] - st.se[k]), ymm(ax, st.m[k] + st.se[k])
+            line!(fig, [x, x], [lo, hi]; color=c.mark, width=c.bar, cap="butt")
+            for v in (lo, hi)
+                line!(fig, [x - 0.405, x + 0.405], [v, v]; color=c.mark, width=c.bar, cap="butt")
+            end
+        end
+        for k in 1:5                                                                                # markers (1 mm squares)
+            rect!(fig, xmm(ax, k) - 0.5, ymm(ax, st.m[k]) - 0.5, 1.0, 1.0; fill=c.mark)
+        end
+        plot!(ax, 1:5, st.m; color=c.line, width=0.75, clip=false)
+        text!(fig, ax.left + 24.19, p == 0 ? ax.top - 1.8 : ax.top + 6.76, @sprintf("p = %g", p); color=c.mark)
+    end
 end
 
-function fig4(data, st, out; kde=true)
-    fig = Figure(180, ROW2 + 46.0)
+function fig4(data, stats, out; kde=true)
+    fig = Figure(178, 88)
     panel_a!(fig)
     panel_b!(fig, data, COL[3]; kde)
     panel_c!(fig, data, COL[4])
     letter!(fig, COL[1], ROW2 + 2.63, "d"); letter!(fig, COL[3], ROW2 + 2.63, "e")
-    panel_f!(fig, st, COL[4])
+    panel_f!(fig, stats, COL[4])
     xm = (COL[1] + COL[3] + 41.25) / 2                                       # legend of d, e, centred under them
     legend!(fig, xm - 59.5 .+ [0, 22.5, 47.5, 76.0, 96.5, 120.0], ROW2 + 43.7,
             [(:ring, "#661919", "central card"), (:dot, "#e54ce5", "response: left"), (:dot, "#33e54c", "response: right"),
@@ -214,8 +241,10 @@ end
 # ------------------------------------------------------------------ main
 if hasflag("simulate")
     include(projectdir("src", "reservoir.jl")); include(projectdir("src", "wcst.jl"))
-    run_wcst_sweep(; variants=["s"], g_contexts=[GB], reps=50, outdir=new_data_dir("wcst"))
-    run_switch_sweep(new_data_dir("switch"); SWITCH.p_values, SWITCH.nets, SWITCH.seed, SWITCH.g_b)
+    hasflag("switch-only") || run_wcst_sweep(; variants=["s"], g_contexts=[GB], reps=50, outdir=new_data_dir("wcst"))
+    run_switch_sweep(new_data_dir("switch"); SWITCH.p_values, nets=parse(Int, flagvalue("nets", string(SWITCH.nets))),
+                     SWITCH.seed, SWITCH.g_b)
+    isdir(data_dir("wcst")) || (println("No WCST runs in $(data_dir()): figure not drawn"); exit())
 end
-fig4(load_results(data_dir("wcst")), switch_stats(load_switch(data_dir("switch"), 0.5), 0.5),
+fig4(load_results(data_dir("wcst")), [(p, switch_stats(load_switch(data_dir("switch"), p), p)) for p in SWITCH.p_values],
      figure_path(hasflag("gaussian") ? "fig4_gaussian" : "fig4"); kde=!hasflag("gaussian"))

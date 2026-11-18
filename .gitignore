@@ -1,3 +1,6 @@
+# Manuscript source and its figure files (not part of the repository)
+paper/
+
 # Data computed by the scripts (the published data are in data/published/)
 data/generated/
 

@@ -16,7 +16,7 @@ The published data of Figs. 1-2 come from one realization of the simulation of t
 these runs is not known); those of Fig. 3 from an earlier NumPy implementation of the same protocol (seed 2026); the
 WCST results from unseeded runs of `run_wcst` (50 runs per network type and g_b); those of Fig. S1 from the seeded
 simulation of `scripts/figS1.jl` (Julia 1.11.9), which `--simulate` reproduces exactly with Julia 1.11; those of
-`switch/` (Figs. 4f, S2) from the seeded runs of `run_switch_sweep` (seed 2026, Julia 1.11.9).
+`switch/` (Fig. 4f) from the seeded runs of `run_switch_sweep` (seed 2026, Julia 1.11.9).
 
 ## self_couplings.txt
 The 500 self-couplings, comma-separated, sorted. `scripts/self_couplings.jl` writes a new vector to
@@ -68,8 +68,8 @@ One line per run; `<type>` is `s` (s-network) or `tau` (τ0-network), `<g_b>` = 
 | `acfm_wcst_<type>-gb_<g_b>.txt` | mean autocorrelation of the closed-loop network (one value every 5 ms) |
 | `self_couplings.txt` | the self-couplings of the s-network (before learning) |
 
-`scripts/fig4.jl --simulate` computes only the runs of Fig. 4 (s-network, g_b = 0.8; it also writes `switch/`);
-`scripts/fig5.jl --simulate` computes the whole sweep.
+`scripts/fig4.jl --simulate` computes only the runs of Fig. 4 (s-network, g_b = 0.8; it also writes `switch/`, alone
+with `--switch-only`); `scripts/fig5.jl --simulate` computes the whole sweep.
 
 ## figS1/ (`scripts/figS1.jl`)
 
@@ -101,20 +101,13 @@ Classification: `fixed_point`; otherwise from the exponents and the recurrence o
 convergence time: `periodic_candidate` (λ1 not above 0, λ2 < 0, state recurring within 5%), `chaotic_candidate`
 (95% interval of λ1 above 0), `nonchaotic_nonperiodic` or `uncertain`.
 
-## bernardi2020/ (`scripts/figS2.jl` panel a)
-
-`accuracy_around_switch.tsv`: `trial` (last, 1st … 4th), `accuracy`, `error`: performance of monkeys on the last trial
-before a context switch and on the first four after it (mean and half-length of the error bar), read off the bar plot of
-Bernardi et al., Cell 183, 954 (2020), by pixel measurement (precision about 0.003). Experimental data: always read from
-`data/published/`, whatever `--data`.
-
-## switch/ (`scripts/fig4.jl` panel f, `scripts/figS2.jl`)
+## switch/ (`scripts/fig4.jl` panel f)
 
 200 s-networks (g_b = 0.8, network k: seed 2026 + k), trained as in Fig. 4 and tested with each error signal halved with
 probability p (`run_switch_sweep`, `run_wcst_switch`). One line per network, one column per test trial (100).
 
 | file | content |
 |---|---|
-| `hits_wcst_s-gb_0.8-phalf_<p>.txt` | p = 0.0, 0.25, 0.5, 0.75: 1 if the response is correct (no error signal) |
+| `hits_wcst_s-gb_0.8-phalf_<p>.txt` | p = 0.0, 0.75: 1 if the response is correct (no error signal) |
 | `rules_wcst_s-gb_0.8.txt` | rule (±1) of each test trial (the same for every p) |
 | `self_couplings.txt` | the self-couplings used |

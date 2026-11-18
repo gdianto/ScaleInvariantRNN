@@ -17,12 +17,11 @@ scale-invariant (power-law) memory, without criticality. The repository covers:
 | 4 | Wisconsin Card Sorting Test (WCST): strategy of the heterogeneous network | `scripts/fig4.jl` |
 | 5 | WCST: heterogeneous self-couplings (s-network) vs heterogeneous time constants (τ0-network) | `scripts/fig5.jl` |
 | S1 | the autonomous network relaxes to a fixed point: activity, fixed-point residual, Lyapunov exponents for g around 0.4 | `scripts/figS1.jl` |
-| S2 | WCST: accuracy around a rule switch, monkeys (Bernardi et al. 2020) and the model with the error signal halved with probability p | `scripts/figS2.jl` |
 
 Each script writes the complete figure (SVG, PDF and PNG): Figs. 1-3 and 5 at the published size and layout, Fig. 4
-in its revised layout (with the rule-switch panel f), and the supplementary Figs. S1-S2. By default the figures are
-drawn from the data of the published runs (`data/published/`); with `--simulate` the scripts recompute the data
-(`data/generated/`) and draw the figure from them.
+in the revised layout of the manuscript (178 × 88 mm, with the rule-switch panel f), and the supplementary Fig. S1.
+By default the figures are drawn from the data of the published runs (`data/published/`); with `--simulate` the
+scripts recompute the data (`data/generated/`) and draw the figure from them.
 
 ## Installation
 
@@ -53,7 +52,6 @@ julia scripts/fig3.jl
 julia scripts/fig4.jl
 julia scripts/fig5.jl
 julia scripts/figS1.jl
-julia scripts/figS2.jl
 ```
 
 Each script takes a few seconds. Panels that show one particular network realization, and most schematics, are
@@ -90,8 +88,7 @@ julia scripts/fig1.jl --simulate --s=generated         # Fig. 1 (~2 min)
 julia scripts/fig2.jl --simulate --s=generated         # Fig. 2 (~40 min)
 julia -t 9 scripts/fig3.jl --simulate --s=generated    # Fig. 3 (~2 min on 9 threads)
 julia -t 16 scripts/fig5.jl --simulate --s=generated   # WCST sweep and Fig. 5 (~20 CPU-hours)
-julia -t 16 scripts/figS2.jl --simulate --s=generated  # switch runs and Fig. S2 (~5 min on 16 threads)
-julia scripts/fig4.jl --data=generated                 # Fig. 4 from the WCST sweep and the switch runs
+julia -t 16 scripts/fig4.jl --simulate --switch-only --s=generated   # switch runs and Fig. 4 (~3 min on 16 threads)
 julia -t 16 scripts/figS1.jl --simulate --s=generated  # Fig. S1 (~1 h on 16 threads)
 ```
 
@@ -176,7 +173,8 @@ reproducible for a given seed, whatever the number of threads.
 ```bash
 julia scripts/fig4.jl                      # published data
 julia -t 16 scripts/fig4.jl --simulate     # only the runs of Fig. 4: 50 s-network runs at g_fb = 0.8 (~1 CPU-hour)
-                                           # and the switch runs of panel f and Fig. S2 (~5 min on 16 threads)
+                                           # and the switch runs of panel f (~3 min on 16 threads; --nets=N networks)
+julia -t 16 scripts/fig4.jl --simulate --switch-only   # only the switch runs (WCST runs: from an earlier --simulate)
 julia scripts/fig4.jl --gaussian           # panel b with Gaussian fits instead (figure fig4_gaussian)
 ```
 
@@ -186,11 +184,23 @@ julia scripts/fig4.jl --gaussian           # panel b with Gaussian fits instead 
 | b | maximum readout weight vs self-coupling of the unit (response, context), kernel density estimates (Scott's bandwidth; `--gaussian`: Gaussian fits) | `wcst/` |
 | c | sorted self-couplings before learning; after learning, mean ± std over 50 networks | `wcst/` |
 | d, e | state space of one network (PCA, hysteresis) | artwork; see `scripts/explore_wcst.jl` |
-| f | accuracy on the last trial before a rule switch and on the first four after it, error signal halved with probability 0.5 during the test (mean ± SEM over 200 networks) | `switch/` |
+| f | accuracy on the last trial before a rule switch and on the first four after it, error signal halved with probability p = 0 (black) or 0.75 (grey) during the test (mean ± SEM over 200 networks) | `switch/` |
 
-The figure is laid out on four columns (a and d span two). The reservoir of a and panels d, e show one unseeded
-network: they are pieces of the published figure (`assets/fig4_artwork_*.svg`, one per piece). Panel f is the
-p = 0.5 panel of Fig. S2.
+The figure (178 × 88 mm) is laid out on four columns (a and d span two). The reservoir of a and panels d, e show one
+unseeded network: they are pieces of the published figure (`assets/fig4_artwork_*.svg`, one per piece); the
+reservoir includes the retouches of the manuscript version (taller input and output pulses, shifted inputs and
+g_fb node, flat-colour readout cones).
+
+Panel f: the networks are trained as in panels b-c (full error signal); during the test each error signal is halved
+with probability p (`run_wcst_switch`). Network k has the seed 2026 + k for every p, so both curves show the same
+networks, tasks and trainings. Only the switches between two blocks of at least 4 test trials are counted (977
+switches), so that every point averages the same switches. Accuracy = fraction of correct responses (no error
+signal).
+
+| p | last | 1st | 2nd | 3rd | 4th |
+|---|---|---|---|---|---|
+| 0 | 0.99 | 0.01 | 0.99 | 0.99 | 0.99 |
+| 0.75 | 0.87 | 0.10 | 0.41 | 0.56 | 0.68 |
 
 ### Figure 5: heterogeneous s vs heterogeneous τ0
 
@@ -239,30 +249,6 @@ stable periodic orbit (|λ1| < 0.01 s⁻¹, λ2 < 0; at g = 0.4 the 7 networks w
 the remaining one (g = 0.42) λ1 is compatible with 0 and λ2 < 0, but the full state does not recur within 5% at the
 periods searched (autocorrelation peaks up to 10 s and their multiples). No trajectory has a positive λ1.
 
-### Supplementary Figure S2: accuracy around a rule switch with unreliable error signals
-
-```bash
-julia scripts/figS2.jl                             # published data
-julia -t 16 scripts/figS2.jl --simulate            # 200 networks x 4 values of p, seed 2026 (~5 min on 16 threads)
-```
-
-| Panel | Content | Source |
-|---|---|---|
-| a | monkeys: performance on the last trial before a context switch and on the first four after it, read off the figure of Bernardi et al., Cell 2020 | `bernardi2020/` |
-| b | model: accuracy on the last trial before a rule switch and on the first four after it, mean ± SEM over 200 s-networks (g_fb = 0.8), for p = 0, 0.25, 0.5, 0.75 (one plot per p) | `switch/` |
-
-The networks are trained as in Fig. 4 (full error signal); during the test each error signal is halved with
-probability p (`run_wcst_switch`). Network k has the seed 2026 + k for every p, so the four plots of b show the same
-networks, tasks and trainings. Only the switches between two blocks of at least 4 test trials are counted (977
-switches), so that every bar averages the same switches. Accuracy = fraction of correct responses (no error signal).
-
-| p | last | 1st | 2nd | 3rd | 4th |
-|---|---|---|---|---|---|
-| 0 | 0.99 | 0.01 | 0.99 | 0.99 | 0.99 |
-| 0.25 | 0.99 | 0.01 | 0.79 | 0.94 | 0.98 |
-| 0.5 | 0.97 | 0.02 | 0.57 | 0.79 | 0.90 |
-| 0.75 | 0.87 | 0.10 | 0.41 | 0.56 | 0.68 |
-
 ## Self-couplings
 
 `scripts/self_couplings.jl` builds the self-coupling vector as described in the Methods: a pilot simulation with s
@@ -297,7 +283,7 @@ julia scripts/explore_timescales.jl     # or open it in VS Code and run the cell
 ```
 scripts/
   fig1.jl ... fig5.jl     one script per figure
-  figS1.jl, figS2.jl      Supplementary Figs. S1, S2
+  figS1.jl                Supplementary Fig. S1
   self_couplings.jl       new self-coupling vector (Methods)
   explore_timescales.jl   interactive exploration of Figs. 1-2
   explore_wcst.jl         interactive exploration of the WCST (Figs. 4-5)
@@ -310,11 +296,11 @@ src/
   wcst.jl                 Figs. 4-5: task, training, test, power-law test, sweep
   wcst_plots.jl           plots of explore_wcst.jl
   regime.jl               Fig. S1: fixed-point convergence, Lyapunov exponents
-  switch.jl               Fig. 4f, Fig. S2: accuracy around a rule switch, its statistics and bar panel
+  switch.jl               Fig. 4f: accuracy around a rule switch and its statistics
   SVGFigure.jl            figure builder (layout in mm, Arial text, SVG/PDF/PNG)
 data/
   README.md               layout and file formats
-  published/              self_couplings.txt, fig1/, fig2/, fig3/, wcst/, switch/, figS1/, bernardi2020/: data of the figures
+  published/              self_couplings.txt, fig1/, fig2/, fig3/, wcst/, switch/, figS1/: data of the figures
   generated/              data computed by the scripts (not under version control)
 assets/                   artwork of the published figures, embedded by the scripts (Fig. 4: one file per piece)
 figures/                  rendered figures; published/ (from data/published) is under version control
