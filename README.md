@@ -58,8 +58,7 @@ With `--simulate` a script recomputes its data (written to `data/generated/`) an
 The WCST sweep of `fig5.jl --simulate` includes the runs of Fig. 4: after it, run `fig4.jl --simulate --switch-only`.
 
 The simulations are seeded, except the WCST runs of Figs. 4b-c and 5 (unseeded, as in the study), so new results are
-statistically equivalent to the published ones, not identical. The published values of Fig. 3 come from an earlier
-NumPy implementation of the same protocol; `--simulate` gives values within 2 SEM of them. The data formats are
+statistically equivalent to the published ones, not identical. The data formats are
 described in [`data/README.md`](data/README.md).
 
 Two scripts explore the model interactively, cell by cell: `scripts/explore_timescales.jl` (Figs. 1-2) and
