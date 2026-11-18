@@ -1,14 +1,6 @@
-# Asymptotic regime of the autonomous network τ0 dr/dt = -r + tanh(J r) (Supplementary Fig. S1).
-#
-#   regime      networks of the paper (g = 0.4, r = 1 at t = 0, no input, no noise): fixed-point convergence, then the
-#               largest Lyapunov exponent and the Jacobian at the fixed point
-#   example     activity of one of them from r = 1 to its fixed point, at log-spaced times
-#   lyapunov_g  the same networks for g around 0.4: the two largest Lyapunov exponents after the convergence, and the
-#               full-state recurrence of the trajectories without a fixed point (periodic orbit or chaos)
-#
-# Lyapunov exponents: tangent-vector renormalization (Benettin et al., Meccanica 15, 21-30, 1980). Every network has its
-# own seed and BLAS runs on one thread: the results do not depend on the number of Julia threads.
-# Requires src/project.jl, src/reservoir.jl and src/timescales.jl.
+# Asymptotic regime of the autonomous network τ0 dr/dt = -r + tanh(J r) (Fig. S1): fixed-point convergence, Lyapunov
+# exponents (Benettin et al. 1980), recurrence. One seed per network and BLAS on one thread: results do not depend on
+# the number of threads. Requires src/project.jl, src/reservoir.jl and src/timescales.jl.
 
 using LinearAlgebra, Random, Statistics, Printf, DelimitedFiles
 
@@ -23,7 +15,6 @@ smoke_regime(c) = merge(c, (nets=4, max_duration=200.0))                      # 
 smoke_lyapunov_g(c) = merge(c, (g_values=[0.39, 0.41], nets=2, max_duration=60.0, alignment=10.0, measurement=20.0))
 smoke_example(e) = merge(e, (ncols=100,))
 
-# ------------------------------------------------------------------ dynamics
 "Euler steps from `r` until ρ = |tanh(Jr) - r|/√N stays below `tolerance` for `hold` s or `max_duration` is reached.
 Saves ρ every `residual_every` s and the state r at the (sorted) steps `record`."
 function converge!(r, J; τ, dt, max_duration, tolerance, hold, residual_every=1.0, record=Int[])
@@ -249,7 +240,6 @@ function fixed_point_exponents(J, r; τ, dt)
     return maximum(real.(λ)), maximum(log.(abs.(1.0 .+ dt .* λ))) / dt
 end
 
-# ------------------------------------------------------------------ regime: the networks of the paper
 "One network of the paper (seed `seed`): convergence, then the largest Lyapunov exponent and the Jacobian."
 function regime_network(s, realization, seed; c=REGIME)
     Random.seed!(seed)
@@ -378,7 +368,6 @@ function write_regime_summary(path, res; c)
     end
 end
 
-# ------------------------------------------------------------------ lyapunov_g: two exponents vs g
 "The networks of the paper (seeds c.seed, ...) for each g: convergence from r = 1, then the two largest Lyapunov
 exponents from the final state (fixed point or not)."
 function run_lyapunov_g(dir, s; c=LYAPUNOV_G, r=REGIME)
@@ -424,7 +413,6 @@ function run_lyapunov_g(dir, s; c=LYAPUNOV_G, r=REGIME)
     end
 end
 
-# ------------------------------------------------------------------ example: activity up to the fixed point
 "Activity (units × times) of network `realization` of `run_regime` (seed c.seed + realization - 1) from r = 1 to
 `e.span` times the time of its fixed point, at `e.ncols` log-spaced times from dt on."
 function activity_example(s, realization; e=EXAMPLE, c=REGIME)

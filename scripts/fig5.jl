@@ -1,27 +1,12 @@
 # Figure 5: heterogeneous self-couplings (s-network) vs heterogeneous time constants (τ0-network) in the WCST.
-#
-#   a, b  self-coupling distributions before/after learning (s-network, τ0-network), g_b = 0.8
-#   c     accuracy vs context feedback g_fb (mean ± std over 50 networks)
-#   d     synaptic-matrix variation |ΔJ|/|J0| vs g_fb (mean ± std over 50 networks)
-#   e     mean autocorrelation of the closed-loop network for g_fb = 0.1, 0.3, 0.6 (mean ± SEM over 50 networks), of
-#         the τ0-network (g_fb = 0.1), and the power-law fit of the g_fb = 0.1 curve as in the power-law test of the
-#         WCST runs (`fit_acf_power_law`, src/wcst.jl: least squares from the 5th sample, t = 0.02 s, on)
-#
-# Usage:
-#   julia scripts/fig5.jl                    # published WCST results (data/published/wcst)
-#   julia -t 16 scripts/fig5.jl --simulate   # whole sweep, 2 networks x 8 g_b x 50 runs (~20 CPU-hours)
-#                                            # -> data/generated/wcst
-#   julia scripts/fig5.jl --data=generated   # figure from the data of an earlier run (or --data=FOLDER)
-# Other flags (--s, --tag, --force, --out): see README.md. The figure goes to figures/<data source>/fig5.
-#
-# Unlike the published panels (bands of mean/√n), the bands of c-d show the standard deviation; panel e shows three
-# values of g_fb (the published one: all of them), the time in s (published: sample index) and a power-law fit.
-# In the code and the data files, g_fb is called g_b (gb).
+#   julia scripts/fig5.jl                    # from data/published/wcst
+#   julia -t 16 scripts/fig5.jl --simulate   # whole sweep (~20 CPU-hours)
+# Other flags (--data, --s, --tag, --force, --out): see README.md. In the code, g_fb is called g_b.
 include(joinpath(@__DIR__, "..", "src", "project.jl"))
 using DelimitedFiles, Statistics, Printf
-import Plots                                             # only for colour maps and histogram binning
+import Plots
 include(projectdir("src", "SVGFigure.jl")); using .SVGFigure
-include(projectdir("src", "reservoir.jl")); include(projectdir("src", "wcst.jl"))   # runs; fit_acf_power_law
+include(projectdir("src", "reservoir.jl")); include(projectdir("src", "wcst.jl"))
 
 const GBACKS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
 const GB_PANELS = 0.8                                     # g_b of panels a-b
@@ -35,9 +20,8 @@ const S_COLOR = BLUES[3]                                                        
 const T_COLOR = hexcolor(Plots.cgrad(:Reds, 10, categorical=true, rev=true)[3])            # τ0-network
 const PRE_COLOR = hexcolor(Plots.cgrad(:batlow, 5, categorical=true)[2])
 const POST_COLOR = hexcolor(Plots.cgrad(:batlow, 5, categorical=true)[4])
-const FIT_COLOR = "#b8860b"                                # power-law fit of panel e (dark goldenrod)
+const FIT_COLOR = "#b8860b"                                # power-law fit of panel e
 
-# ------------------------------------------------------------------ data
 function load_results(dir)
     rd(f, delim=' ') = readdlm(joinpath(dir, f), delim)
     r_s = rd("results_wcst_s.txt")[2:end, :]; r_t = rd("results_wcst_tau.txt")[2:end, :]
@@ -62,14 +46,13 @@ lim_from(v1, m1, v2, m2, a, b; log=false) = begin
     lims = (f(a), f(b)); log ? (10 .^ lims) : lims
 end
 
-# ------------------------------------------------------------------ figure
 function fig5(data, out)
     fig = Figure(89, 120)
     letter!(x, y, s; size=10) = text!(fig, x, y, s; size=size, weight="bold")
     legend_swatch!(x0, x1, y0, y1, c) = (rect!(fig, x0, y0, x1 - x0, y1 - y0; fill=c, fill_opacity=0.35);
                                          line!(fig, [x0, x1], [y0, y0]; color=c, width=0.48, cap="butt"))
 
-    # ---- a: s-network, self-couplings pre/post learning
+    # a: s-network, self-couplings before/after learning
     letter!(5.48, 2.53, "a")
     ax = Axes(fig; left=15.522, right=40.331, top=3.927, bottom=29.817,
               xlim=lim_from(0.5, 17.858, 2.5, 39.63, 15.522, 40.331), ylim=lim_from(0.0, 29.085, 2.0, 5.37, 29.817, 3.927))
@@ -82,7 +65,7 @@ function fig5(data, out)
     legend_swatch!(26.19, 28.20, 4.744, 6.41, PRE_COLOR);  text!(fig, 28.71, 6.25, "pre")
     legend_swatch!(34.18, 36.19, 4.77, 6.43, POST_COLOR);  text!(fig, 36.70, 6.32, "post")
 
-    # ---- b: τ0-network, self-couplings pre (all 0) / post learning
+    # b: τ0-network, self-couplings before (all 0)/after learning
     letter!(48.04, 2.53, "b")
     ax = Axes(fig; left=57.299, right=82.904, top=4.257, bottom=30.043,
               xlim=lim_from(-0.6, 58.994, 0.6, 78.383, 57.299, 82.904), ylim=(0.0, 30.0))
@@ -93,7 +76,7 @@ function fig5(data, out)
     text!(fig, 51.93, 18.67, "pdf"; rotate=-90)
     text!(fig, 60.64, 35.49, "self coupling, s")
 
-    # ---- c: accuracy vs g_b
+    # c: accuracy vs g_b
     letter!(5.61, 43.91, "c")
     ax = Axes(fig; left=15.393, right=40.444, top=46.937, bottom=73.081,
               xlim=lim_from(0.2, 19.477, 0.8, 39.736, 15.393, 40.444), ylim=(0.0, 1.0))
@@ -109,7 +92,7 @@ function fig5(data, out)
     legend_swatch!(30.87, 32.89, 69.464, 71.13, S_COLOR);  text!(fig, 33.39, 70.97, "s")
     legend_swatch!(36.74, 38.76, 69.49, 71.15, T_COLOR);   text!(fig, 39.26, 71.04, "τ_{0}")
 
-    # ---- d: synaptic-matrix variation vs g_b (log scale)
+    # d: synaptic-matrix variation vs g_b
     letter!(47.93, 43.91, "d")
     ax = Axes(fig; left=60.173, right=82.406, top=45.578, bottom=72.85, xscale=:identity, yscale=:log10,
               xlim=lim_from(0.2, 63.799, 0.8, 81.777, 60.173, 82.406),
@@ -124,7 +107,7 @@ function fig5(data, out)
     text!(fig, 53.29, 73.20, "synaptic matrix variation"; rotate=-90)
     text!(fig, (ax.left + ax.right) / 2, 77.83, "g_{fb}"; anchor="middle")
 
-    # ---- e: autocorrelation vs time (sample k at (k - 1) * SAMPLE; the first one, t = 0, is left out of the log axis)
+    # e: autocorrelation vs time (t = 0 left out of the log axis)
     letter!(9.28, 85.84, "e"; size=9.56)
     ax = Axes(fig; left=35.917, right=81.364, top=89.061, bottom=113.642, xscale=:log10, yscale=:log10,
               xlim=(0.004, 0.004 * 10^3.5), ylim=lim_from(1.0, 89.061, 0.01, 111.216, 113.642, 89.061; log=true))
@@ -140,16 +123,16 @@ function fig5(data, out)
     m_fit = vec(mean(data.acfm[GB_E[1]], dims=1))
     A, α = fit_acf_power_law((0:length(m_fit)-1) .* SAMPLE, m_fit)      # from t = 0.02 s on, as the power-law test
     @printf("power-law fit of C(t), g_b = %g, t >= 0.02 s: C = %.4f t^%.3f\n", GB_E[1], A, α)
-    tf = [(1 / A)^(1 / α), ax.xlim[2]]                    # as Fig. 1f: from where the line enters the axes to the right edge
+    tf = [(1 / A)^(1 / α), ax.xlim[2]]
     plot!(ax, tf, A .* tf .^ α; color=FIT_COLOR, width=0.9, dash=(6.0, 3.75), cap="round")
     xaxis!(ax; ticks=[0.01, 0.1, 1.0, 10.0], labels=["10^{-2}", "10^{-1}", "10^{0}", "10^{1}"], labeloffset=3.28, width=0.64)
     yaxis!(ax; ticks=[1.0, 0.1, 0.01], labels=["10^{0}", "10^{-1}", "10^{-2}"], labelanchor="middle",
            labeloffset=35.917 - 33.26, baselineshift=0.64, width=0.64)
     text!(fig, 29.65, 103.75, "C(t)"; rotate=-90)
     text!(fig, 55.37, 119.52, "time, t [s]")
-    # legend, centred on the axes: swatches 0.9 mm lines, 2.24 pt thick, with flattened round caps (0.1 mm); dashed fit
+    # legend
     swatch!(y, c) = rect!(fig, 11.209, y - 0.395, 1.1, 0.79; fill=c, rx=0.1, ry=0.395)
-    nrows = length(GB_E) + 2                                                  # g_fb values, τ0-network, fit
+    nrows = length(GB_E) + 2
     row(k) = (r = k - 1 + (9 - nrows) / 2; (89.187 + r * 3.0384, 89.61 + r * 3.0875))   # swatch centre, text baseline
     for (k, g) in enumerate(GB_E)
         swatch!(row(k)[1], BLUES[findfirst(==(g), GBACKS)])
@@ -163,7 +146,6 @@ function fig5(data, out)
     return save(fig, out)
 end
 
-# ------------------------------------------------------------------ main
 if hasflag("simulate")
     run_wcst_sweep(; variants=["s", "tau"], g_contexts=GBACKS, reps=50, outdir=new_data_dir("wcst"))
 end

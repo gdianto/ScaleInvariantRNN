@@ -1,19 +1,7 @@
-# Figure 2: an effective colored noise replaces the recurrent input and keeps the scale-invariant memory.
-#
-#   a  coupled network (case 1) and decoupled network driven by OU inputs (case 2)
-#   b  population activity ⟨R(t)⟩ of both networks after r(0) = 1 (mean ± 3 SEM over 500 networks)
-#   c  relaxation time τ(s) of each unit in both networks
-#   d  coupled network, s >= 1: τ(s) and the escape time of a bistable unit driven by colored noise (theory)
-#
-# Usage:
-#   julia scripts/fig2.jl                     # published data (data/published/fig2)
-#   julia scripts/fig2.jl --simulate          # new run, 500 coupled + 500 decoupled networks (~40 min) -> data/generated/fig2
-#   julia scripts/fig2.jl --simulate --smoke  # quick test, 40 units, 2 networks (data/generated/smoke/fig2)
-#   julia scripts/fig2.jl --data=generated    # figure from the data of an earlier run (or --data=FOLDER)
-# Other flags (--s, --tag, --force, --out): see README.md. The figure goes to figures/<data source>/fig2.
-#
-# The theoretical curve of d is computed (escape_time, σ = √N σ_OU). Axes, labels and schematic:
-# assets/fig2_layout.svg.
+# Figure 2: an OU-driven decoupled network reproduces the coupled one; escape-time theory.
+#   julia scripts/fig2.jl              # from data/published/fig2
+#   julia scripts/fig2.jl --simulate   # new run, seeds 1234 and 4321 (~40 min; --smoke: quick test)
+# Other flags (--data, --s, --tag, --force, --out): see README.md.
 include(joinpath(@__DIR__, "..", "src", "project.jl"))
 using DelimitedFiles, Statistics, Printf
 include(projectdir("src", "SVGFigure.jl")); using .SVGFigure
@@ -22,8 +10,7 @@ include(projectdir("src", "timescales.jl"))
 
 const COUPLED, DECOUPLED, DARK, RED = "#4a7b81", "#f9a07b", "#256167", "#bb1616"
 
-# plot area [left, right, top, bottom] (mm) and data -> mm mappings mm = c0 + c1*u (u = value or log10 value),
-# measured on the published figure
+# axes boxes (mm) and mappings mm = c0 + c1*u (u = value or log10 value), measured on the published figure
 const AX = (
     b = ((55.66, 84.83, 3.95, 28.59), (82.21, 6.43), (6.80, -9.47), :log10, :log10),
     c = ((11.81, 42.38, 40.77, 66.48), (-7.64691, 28.98218), (45.52, -12.07), :identity, :log10),
@@ -43,10 +30,7 @@ function load_data(dir)
             s=c[:, 1], tau_coupled=c[:, 2], tau_decoupled=c[:, 3], d_s=d[:, 1], d_tau=d[:, 2])
 end
 
-"""
-New run, written to data/generated[/TAG]/fig2. Panel b: the mean (samples 2:19000) and the outline of the ±3 SEM
-band, lower edge kept positive for the log axis; fig2b_mean_sem.tsv has all samples.
-"""
+"New run, written to data/generated[/TAG]/fig2."
 function simulate(smoke::Bool)
     dir = new_data_dir("fig2")
     c = smoke ? smoke_config(FIG2) : FIG2

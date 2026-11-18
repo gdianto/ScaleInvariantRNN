@@ -1,6 +1,4 @@
-# Accuracy of the s-network (g_b = 0.8) around a rule switch of the WCST (Fig. 4f): result files and statistics.
-# During the test each error pulse is halved with probability p (`run_wcst_switch`, src/wcst.jl); network k has the seed
-# SWITCH.seed + k for every p (paired runs: same network, task and training).
+# Accuracy around a rule switch of the WCST (Fig. 4f): result files and statistics (runs: run_switch_sweep, src/wcst.jl).
 
 using DelimitedFiles, Statistics, Printf
 

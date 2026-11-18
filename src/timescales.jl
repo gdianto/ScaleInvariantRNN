@@ -9,7 +9,6 @@ const FIG2 = (n_units=500, n_networks=500, g=0.4, τ=0.01, dt=0.01 * 0.01, save_
               τ_ou=0.01, σ_ou=0.0186734693877551, seed=1234, seed_decoupled=4321)
 smoke_config(c) = merge(c, (n_units=40, n_networks=2))     # quick pipeline test
 
-# ------------------------------------------------------------------ τ(s) model
 tau_model(s, p) = p[1] .* exp.(p[2] .* s .^ p[3])
 log_tau_model(s, p) = log(p[1]) .+ p[2] .* s .^ p[3]
 
@@ -48,7 +47,6 @@ function escape_time(s; σ, τ0=0.01)
     return τ0 * 2π * sqrt(abs(1 - s * sech(xm)^2 * abs(1 - s))) * exp(ΔU / (σ^2 / 2))
 end
 
-# ------------------------------------------------------------------ networks
 "All values, or an evenly spaced subset of them."
 select_self_couplings(s, n) = n == length(s) ? collect(Float64, s) : collect(Float64, s[round.(Int, range(1, length(s); length=n))])
 
@@ -78,7 +76,6 @@ end
 integration_times(c) = 0.0:c.dt:c.duration
 saved_times(c) = collect(integration_times(c))[1:c.save_every:end]
 
-# ------------------------------------------------------------------ simulations
 "Fig. 1: unit activity averaged over networks, and the activity of the last network."
 function simulate_fig1(c, s)
     Random.seed!(c.seed)
@@ -142,7 +139,6 @@ end
 
 progress(name, k, n) = (k == 1 || k == n || k % max(1, n ÷ 10) == 0) && println("  $name network $k / $n")
 
-# ------------------------------------------------------------------ fits
 exponential_decay(t, p) = p[1] .* exp.(-t ./ p[2])
 unit_decay(t, p) = exp.(-t ./ p[1])
 

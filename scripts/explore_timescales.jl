@@ -1,17 +1,11 @@
-# Interactive exploration of Figs. 1-2: networks with heterogeneous self-couplings s relaxing from r = 1, the
-# unit timescales τ(s) and the fit τ(s) = a exp(b s^c), the P(s) it implies, the power-law decay of the
-# population activity, the recurrent input, and the decoupled network driven by OU inputs.
-#
-# Run cell by cell (`##`): change the parameters in the first cell and re-run the following cells.
-# Defaults: the paper, with 50 networks instead of 500. With save_figures = true the plots go to
-# figures/explore_timescales/.
-#   julia scripts/explore_timescales.jl     # all cells (GKSwstype=100 for no windows)
+# Interactive exploration of Figs. 1-2, to run cell by cell (`##`). Parameters in the first cell (defaults: the
+# paper, with 50 networks instead of 500); save_figures = true saves the plots to figures/explore_timescales/.
 include(joinpath(@__DIR__, "..", "src", "project.jl"))
 using LinearAlgebra, Random, Statistics, DelimitedFiles, Printf, Plots
 include(projectdir("src", "reservoir.jl"))
 include(projectdir("src", "timescales.jl"))
 
-## ===================== parameters =====================
+## parameters
 seed = 1234              # nothing = unseeded
 
 # network
@@ -44,7 +38,7 @@ save_figures = false
 default(left_margin=5Plots.mm, bottom_margin=6Plots.mm)
 show!(p, name) = (display(p); save_figures && savefig(p, joinpath(figures_dir("explore_timescales"), "$name.png")); p)
 
-## ===================== self-couplings and time grid =====================
+## self-couplings and time grid
 s = custom_s === nothing ? vec(readdlm(s_file, ',', Float64)) :
     custom_s isa Number ? fill(Float64(custom_s), N) : collect(Float64, custom_s)
 length(s) == N || error("custom_s must contain N = $N values")
@@ -56,7 +50,7 @@ trace_units = [argmin(abs.(s .- v)) for v in trace_s]
 show!(histogram(s; bins=range(minimum(s), maximum(s) + 1e-9; length=11), normalize=:pdf, label="s",
                 xlabel="self-coupling s", ylabel="P(s)", color=:teal), "s_distribution")
 
-## ===================== coupled networks: relaxation from r = 1 =====================
+## coupled networks: relaxation from r = 1
 # also the recurrent input of each unit without its self-coupling, Σ_{j≠i} J_ij r_j
 function run_coupled(s, n_nets)
     mean_r = zeros(N, length(t)); pop = zeros(length(t), n_nets); input_std = zeros(N)
@@ -71,7 +65,7 @@ end
 seed === nothing || Random.seed!(seed)
 @time co = run_coupled(s, n_nets);
 
-## ===================== rasters and traces (Fig. 1b-d) =====================
+## rasters and traces (Fig. 1b-d)
 order = sortperm(s)
 p1 = heatmap(t, 1:N, co.example[order, :]; c=:RdBu, clims=(-1, 1), xlabel="t [s]", ylabel="unit (sorted by s)", title="one network")
 p2 = heatmap(t, 1:N, co.mean_r[order, :]; c=:RdBu, clims=(-1, 1), xlabel="t [s]", title="mean over $n_nets networks")
@@ -85,7 +79,7 @@ for u in trace_units
 end
 show!(plot(p1, p2; layout=(1, 2), size=(1000, 380)), "traces")
 
-## ===================== τ(s), its fit and the implied P(s) (Fig. 1a, e) =====================
+## τ(s), its fit and the implied P(s) (Fig. 1a, e)
 # P(s) makes P(τ) ∝ τ^-2 on [τ(min s), τ(max s)] for the fitted τ(s)
 crossing_times(mean_r) = [(k = findfirst(<=(exp(-1)), view(mean_r, u, :)); k === nothing ? NaN : t[k]) for u in axes(mean_r, 1)]
 unit_tau(mean_r) = tau_method == "paper" ? fit_unit_timescales(mean_r, s, t, dt) : crossing_times(mean_r)
@@ -106,7 +100,7 @@ p2 = histogram(s; bins=range(minimum(s), maximum(s) + 1e-9; length=11), normaliz
 plot!(p2, sc, self_coupling_density(sc, fit.params; smin=minimum(s), smax=maximum(s)); lw=2, color=:red, label="P(s) for P(τ) ∝ τ⁻²")
 show!(plot(p1, p2; layout=(1, 2), size=(1000, 380)), "tau_vs_s")
 
-## ===================== population activity: power law (Fig. 1f) =====================
+## population activity: power law (Fig. 1f)
 R = vec(mean(co.pop, dims=2)); R_sem = vec(std(co.pop, dims=2)) ./ sqrt(n_nets)
 pp = fit_power_law(t, R)
 win = (t .>= 0.07) .& (t .<= 0.9) .& (R .> 0)
@@ -119,7 +113,7 @@ p = plot(t[keep], R[keep]; ribbon=band(R[keep], R_sem[keep]), xscale=:log10, ysc
 plot!(p, t[win], power_law(t[win], pp); ls=:dash, color=:red, lw=2, label=@sprintf("t^-%.3f", -pp[2]))
 show!(p, "population_power_law")
 
-## ===================== recurrent input vs OU input =====================
+## recurrent input vs OU input
 # OU input Σ_j Jext_ij x_j: stationary std √N σ/√2, correlation time τ_ou. The recurrent input is not
 # stationary: it changes as the network relaxes (right: std across units vs time, one network).
 ou_std = sqrt(N) * σ_ou / sqrt(2)
@@ -139,7 +133,7 @@ p3 = plot(t, vec(std(co.example_input, dims=1)); lw=2, label="recurrent input", 
 hline!(p3, [ou_std]; color=:orange, lw=2, label="OU input")
 show!(plot(p1, p2, p3; layout=(1, 3), size=(1400, 380)), "recurrent_input")
 
-## ===================== decoupled network driven by OU inputs (Fig. 2b-c) =====================
+## decoupled network driven by OU inputs (Fig. 2b-c)
 function run_decoupled(s, n_nets, τ_ou, σ_ou; rng=Random.default_rng())
     mean_r = zeros(N, length(t)); pop = zeros(length(t), n_nets)
     for k in 1:n_nets
@@ -163,7 +157,7 @@ scatter!(p2, s[okd], τ_dec[okd]; ms=2, msw=0, color=:orange, label="decoupled +
 plot!(p2, 1:0.01:maximum(s), escape_time.(1:0.01:maximum(s); σ=sqrt(N) * σ_ou, τ0); lw=2, color=:red, label="escape time (theory, s > 1)")
 show!(plot(p1, p2; layout=(1, 2), size=(1000, 380)), "coupled_vs_decoupled")
 
-## ===================== optional: fit of σ_ou (Methods; paper: 0.0187) =====================
+## optional: fit of σ_ou (Methods; paper: 0.0187)
 if run_grid_search
     fit_window = (t .>= 0.003) .& (t .<= 1.9)
     loss = map(σ_grid) do σ_try

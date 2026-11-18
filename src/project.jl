@@ -1,9 +1,4 @@
-# Repository paths and command-line flags. Include from every script, before any `using`:
-#   include(joinpath(@__DIR__, "..", "src", "project.jl"))
-#
-# data/published/         data of the published figures; never written by the code
-# data/generated/[TAG/]   data computed by the scripts (--simulate, self_couplings.jl), same layout
-# figures/<source>/       rendered figures, <source> = published, generated[/TAG] or the name of a --data folder
+# Repository paths and command-line flags. Include from every script before any `using`.
 
 const PROJECT_ROOT = dirname(@__DIR__)
 

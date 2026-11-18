@@ -1,316 +1,85 @@
 # Heterogeneous self-couplings enable scale-invariant memory and cognitive flexibility without criticality
 
-Code and data to reproduce the results and figures of
+Code and data to reproduce the figures of
 
 > F. Damiani, G. Di Antonio, J. Epifanio, G. V. Vinci, A. Galluzzi, M. Mattia,
-> *Heterogeneous self-couplings enable scale-invariant memory and cognitive flexibility without criticality.*
+> *Heterogeneous self-couplings enable scale-invariant memory and cognitive flexibility without criticality*,
+> bioRxiv (2026). https://doi.org/10.64898/2026.10.25.761657
 
 The model is a recurrent rate network, τ0 dr_i/dt = −r_i + tanh(s_i r_i + Σ_j W_ij r_j + inputs), in which every
-unit has its own self-coupling s_i. A suitable distribution of s gives a broad distribution of unit timescales and a
-scale-invariant (power-law) memory, without criticality. The repository covers:
-
-| Figure | Content | Script |
-|---|---|---|
-| 1 | self-couplings, unit timescales τ(s), power-law decay of the population activity | `scripts/fig1.jl` |
-| 2 | a decoupled network driven by Ornstein-Uhlenbeck (OU) noise reproduces the coupled network; escape-time theory | `scripts/fig2.jl` |
-| 3 | short-term memory: heterogeneous network (hRNN) vs homogeneous network (hom) and echo-state network (esn) | `scripts/fig3.jl` |
-| 4 | Wisconsin Card Sorting Test (WCST): strategy of the heterogeneous network | `scripts/fig4.jl` |
-| 5 | WCST: heterogeneous self-couplings (s-network) vs heterogeneous time constants (τ0-network) | `scripts/fig5.jl` |
-| S1 | the autonomous network relaxes to a fixed point: activity, fixed-point residual, Lyapunov exponents for g around 0.4 | `scripts/figS1.jl` |
-
-Each script writes the complete figure (SVG, PDF and PNG): Figs. 1-3 and 5 at the published size and layout, Fig. 4
-in the revised layout of the manuscript (178 × 88 mm, with the rule-switch panel f), and the supplementary Fig. S1.
-By default the figures are drawn from the data of the published runs (`data/published/`); with `--simulate` the
-scripts recompute the data (`data/generated/`) and draw the figure from them.
+unit has its own self-coupling s_i. A suitable distribution of s gives a broad range of unit timescales and a
+scale-invariant (power-law) memory without criticality, which the network uses for short-term memory and for a
+context-dependent task (Wisconsin Card Sorting Test, WCST).
 
 ## Installation
 
-- [Julia](https://julialang.org) 1.11. The package versions in `Manifest.toml` were resolved with Julia 1.11.6;
-  other Julia versions print a warning and may fail to install them. From the repository folder, install the
-  packages once:
+- [Julia](https://julialang.org) 1.11 (with [juliaup](https://github.com/JuliaLang/juliaup): `juliaup add 1.11`, then
+  `julia +1.11` in the commands below). Install the packages once, from the repository folder:
 
   ```bash
   julia --project=. -e 'using Pkg; Pkg.instantiate()'
   ```
 
-  If your default Julia is another version, install 1.11 with [juliaup](https://github.com/JuliaLang/juliaup)
-  (`juliaup add 1.11`) and run every command with `julia +1.11` instead of `julia`.
-
-  Packages: DelimitedFiles, Distributions, LsqFit, MultivariateStats, Plots and standard libraries.
-  Every script activates the environment of the repository by itself, so it always uses exactly these versions,
-  whatever the folder it is started from and whatever environment is active (also when run cell by cell in
-  VS Code). A script started before the installation stops with a message asking to run `Pkg.instantiate()`.
-- [Inkscape](https://inkscape.org) on the command line, to export PDF and PNG (without it only the SVG is written).
-- The Arial font, for the PDF and PNG exports (e.g. `ttf-mscorefonts-installer` on Debian/Ubuntu).
-
-## Quick start: the published figures
-
-```bash
-julia scripts/fig1.jl     # -> figures/published/fig1.svg, .pdf, .png
-julia scripts/fig2.jl
-julia scripts/fig3.jl
-julia scripts/fig4.jl
-julia scripts/fig5.jl
-julia scripts/figS1.jl
-```
-
-Each script takes a few seconds. Panels that show one particular network realization, and most schematics, are
-embedded as artwork (`assets/`); everything else is drawn by the scripts, from the data.
-
-## Data and figures
-
-```
-data/published/           data of the published figures: read by default, never written by the scripts
-data/generated/[TAG/]     data computed by the scripts, same layout (not under version control)
-figures/<source>/         rendered figures: figures/published/ (under version control), figures/generated/[TAG/], ...
-```
-
-The layout and the file formats are described in [`data/README.md`](data/README.md). The same flags work in every
-script:
-
-| Flag | Effect |
-|---|---|
-| `--simulate` | compute new data, write them to `data/generated/` and draw the figure from them |
-| `--data=published\|generated\|FOLDER` | data to draw from (default: `published`) |
-| `--s=published\|generated\|FILE` | self-couplings used by the simulations (default: `published`) |
-| `--tag=TAG` | use `data/generated/TAG/` instead of `data/generated/`, to keep several runs |
-| `--force` | replace existing generated data (otherwise the script stops instead of overwriting them) |
-| `--out=PREFIX` | output name of the figure (default: `figures/<source>/figN`) |
-
-## Reproducing the results from scratch
-
-All results can be recomputed from the code alone. Simulations are seeded, except the WCST sweep of Figs. 4b-c and 5
-(unseeded, as in the study); new results are statistically equivalent to the published ones, not identical.
-
-```bash
-julia scripts/self_couplings.jl                        # self-couplings (~2 min)
-julia scripts/fig1.jl --simulate --s=generated         # Fig. 1 (~2 min)
-julia scripts/fig2.jl --simulate --s=generated         # Fig. 2 (~40 min)
-julia -t 9 scripts/fig3.jl --simulate --s=generated    # Fig. 3 (~2 min on 9 threads)
-julia -t 16 scripts/fig5.jl --simulate --s=generated   # WCST sweep and Fig. 5 (~20 CPU-hours)
-julia -t 16 scripts/fig4.jl --simulate --switch-only --s=generated   # switch runs and Fig. 4 (~3 min on 16 threads)
-julia -t 16 scripts/figS1.jl --simulate --s=generated  # Fig. S1 (~1 h on 16 threads)
-```
-
-The data go to `data/generated/` and the figures to `figures/generated/`. Without `--s=generated` the simulations
-use the self-couplings of the paper. Adding the same `--tag=TAG` to every command keeps the whole run in
-`data/generated/TAG/`. Runtimes are for a 16-core workstation.
+- [Inkscape](https://inkscape.org) and the Arial font, to export PDF and PNG (without Inkscape only the SVG is written).
 
 ## Figures
 
-### Figure 1: heterogeneous self-couplings generate multiple timescales
+Each script draws one figure of the paper from the data in `data/published/` and writes it to `figures/published/`
+(SVG, PDF, PNG) in a few seconds:
 
 ```bash
-julia scripts/fig1.jl                      # published data
-julia scripts/fig1.jl --simulate           # new run: 500 networks x 500 units, seed 1234
-julia scripts/fig1.jl --simulate --smoke   # quick test: 40 units, 2 networks (data/generated/smoke/)
+julia scripts/fig1.jl
 ```
 
-| Panel | Content | Default source |
-|---|---|---|
-| a | schematic; distribution of s and the P(s) implied by the τ(s) fit | `fig1e_tau_vs_self_coupling.tsv` |
-| b | s of each unit, activity of one network and network-averaged activity | artwork (generated data: `fig1b_*.tsv`) |
-| c | single-trial activity of four units (s = 0.70, 0.80, 1.00, 1.23) | `fig1c_single_trial_activity.tsv` |
-| d | the same units, averaged over 500 networks | `fig1d_mean_activity.tsv` |
-| e | relaxation time τ of each unit vs s, fit τ(s) = a exp(b s^c) | `fig1e_tau_vs_self_coupling.tsv` |
-| f | population activity ⟨R(t)⟩, power-law fit on 0.07–0.9 s | `fig1f_population_activity.tsv` |
-
-Model: N = 500, g = 0.4 (Gaussian couplings W with spectral radius g), τ0 = 0.01 s, all units start at r = 1, no
-input; explicit Euler with dt = 1 ms over 2 s; averages over 500 realizations of W with the same self-couplings.
-The relaxation time of each unit is fitted as exp(−t/τ) for s < 1 and A exp(−t/τ) for s ≥ 1. The published run
-gives a = 0.0165, b = 1.017, c = 2.99 and a decay ∝ t^−0.93; a new run gives a = 0.0154, b = 1.085, c = 2.89 and
-t^−0.95.
-
-### Figure 2: an effective colored noise replaces the recurrent input
-
-```bash
-julia scripts/fig2.jl                      # published data
-julia scripts/fig2.jl --simulate           # new run: 500 coupled + 500 decoupled networks, seeds 1234 / 4321
-julia scripts/fig2.jl --simulate --smoke   # quick test (data/generated/smoke/)
-```
-
-| Panel | Content | Default source |
-|---|---|---|
-| a | coupled network (case 1) and decoupled network driven by OU inputs (case 2) | schematic |
-| b | ⟨R(t)⟩ of both networks, mean ± 3 SEM over 500 networks | `fig2b_*.tsv` |
-| c | τ(s) of each unit in both networks | `fig2c_tau_vs_self_coupling.tsv` |
-| d | coupled network, s ≥ 1: τ(s) and the theoretical escape time | `fig2d_tau_coupled_s_gt_1.txt`; theory computed |
-
-Model: as Fig. 1 with dt = 0.1 ms. The decoupled network keeps only the self-couplings; unit i receives
-Σ_k Jext_ik x_k(t), with Jext_ik ~ N(0, 1) and N independent stationary OU processes x_k (τ_OU = τ0,
-σ_OU = 0.0187). `--simulate` also writes the statistics of the recurrent input of the coupled network.
-
-The theoretical curve is the Kramers-type escape time of a bistable unit in the potential
-U(x) = x²/2 − s log cosh x, with noise amplitude σ = √N σ_OU (`escape_time` in `src/timescales.jl`).
-
-### Figure 3: delay-invariant short-term memory
-
-```bash
-julia scripts/fig3.jl                      # published values
-julia -t 9 scripts/fig3.jl --simulate      # new simulation (--nets=50, --seed=2026)
-```
-
-| Panel | Content | Default source |
-|---|---|---|
-| a | stimulation scheme, activity of one hRNN realization | artwork |
-| b | hRNN: correlation between evoked states vs signed position distance, for each T_sep | `fig3_values.csv` |
-| c | correlation vs \|position distance\| for hRNN, hom and esn (mean ± SEM over 50 networks) | `fig3_values.csv` |
-
-| Network | g | τ0 | self-coupling |
+| Figure | Content | Script | `--simulate` |
 |---|---|---|---|
-| hRNN | 0.4 | 0.01 s | the self-coupling vector |
-| hom | 0.4 | 0.01 s | its mean, 1.026 |
-| esn | 0.9999 | 0.04 s | 0 |
+| 1 | self-couplings, unit timescales, power-law decay | `scripts/fig1.jl` | ~2 min |
+| 2 | decoupled network driven by Ornstein-Uhlenbeck noise; escape-time theory | `scripts/fig2.jl` | ~40 min |
+| 3 | short-term memory: heterogeneous vs homogeneous and echo-state networks | `scripts/fig3.jl` | ~2 min |
+| 4 | WCST: strategy of the heterogeneous network | `scripts/fig4.jl` | ~1 CPU-hour |
+| 5 | WCST: heterogeneous self-couplings vs heterogeneous time constants | `scripts/fig5.jl` | ~20 CPU-hours |
+| S1 | the autonomous network relaxes to a fixed point | `scripts/figS1.jl` | ~1 h on 16 threads |
 
-Protocol: N = 500; six orthogonal stimuli, each on 1/6 of the units, lasting 0.01 s and separated by
-T_sep = 0.01, 0.05, 0.2 s; dt = 1 ms; 5 transient cycles, then 10 recorded cycles; 50 networks per condition.
-The published values were computed with an earlier NumPy implementation of the same protocol (seed 2026), which
-Julia cannot reproduce digit by digit; `--simulate` gives values within 2 SEM of them. The simulation is
-reproducible for a given seed, whatever the number of threads.
+## Reproducing the results
 
-### Figure 4: WCST strategy of the s-network (g_fb = 0.8)
+With `--simulate` a script recomputes its data (written to `data/generated/`) and draws the figure from them
+(`figures/generated/`). Use several threads for the longer runs, e.g. `julia -t 16 scripts/fig5.jl --simulate`.
 
-```bash
-julia scripts/fig4.jl                      # published data
-julia -t 16 scripts/fig4.jl --simulate     # only the runs of Fig. 4: 50 s-network runs at g_fb = 0.8 (~1 CPU-hour)
-                                           # and the switch runs of panel f (~3 min on 16 threads; --nets=N networks)
-julia -t 16 scripts/fig4.jl --simulate --switch-only   # only the switch runs (WCST runs: from an earlier --simulate)
-julia scripts/fig4.jl --gaussian           # panel b with Gaussian fits instead (figure fig4_gaussian)
-```
-
-| Panel | Content | Default source |
-|---|---|---|
-| a | the task (central card, correct choice in each context) and the reservoir with its inputs and readouts | task drawn; reservoir: artwork |
-| b | maximum readout weight vs self-coupling of the unit (response, context), kernel density estimates (Scott's bandwidth; `--gaussian`: Gaussian fits) | `wcst/` |
-| c | sorted self-couplings before learning; after learning, mean ± std over 50 networks | `wcst/` |
-| d, e | state space of one network (PCA, hysteresis) | artwork; see `scripts/explore_wcst.jl` |
-| f | accuracy on the last trial before a rule switch and on the first four after it, error signal halved with probability p = 0 (black) or 0.75 (grey) during the test (mean ± SEM over 200 networks) | `switch/` |
-
-The figure (178 × 88 mm) is laid out on four columns (a and d span two). The reservoir of a and panels d, e show one
-unseeded network: they are pieces of the published figure (`assets/fig4_artwork_*.svg`, one per piece); the
-reservoir includes the retouches of the manuscript version (taller input and output pulses, shifted inputs and
-g_fb node, flat-colour readout cones).
-
-Panel f: the networks are trained as in panels b-c (full error signal); during the test each error signal is halved
-with probability p (`run_wcst_switch`). Network k has the seed 2026 + k for every p, so both curves show the same
-networks, tasks and trainings. Only the switches between two blocks of at least 4 test trials are counted (977
-switches), so that every point averages the same switches. Accuracy = fraction of correct responses (no error
-signal).
-
-| p | last | 1st | 2nd | 3rd | 4th |
-|---|---|---|---|---|---|
-| 0 | 0.99 | 0.01 | 0.99 | 0.99 | 0.99 |
-| 0.75 | 0.87 | 0.10 | 0.41 | 0.56 | 0.68 |
-
-### Figure 5: heterogeneous s vs heterogeneous τ0
-
-```bash
-julia scripts/fig5.jl                      # published WCST results
-julia -t 16 scripts/fig5.jl --simulate     # the whole sweep (~20 CPU-hours)
-```
-
-| Panel | Content (all from `wcst/`) |
+| Flag | Effect |
 |---|---|
-| a, b | self-couplings before and after learning, s-network and τ0-network, g_fb = 0.8 |
-| c | accuracy vs context feedback g_fb, mean ± std over 50 networks |
-| d | change of the synaptic matrix \|ΔJ\|/\|J0\| vs g_fb, mean ± std over 50 networks |
-| e | mean autocorrelation of the closed-loop network for g_fb = 0.1, 0.3, 0.6 (mean ± SEM) and of the τ0-network (g_fb = 0.1), with the power-law fit of the g_fb = 0.1 curve used by the power-law test of the WCST runs (least squares from t = 0.02 s on; C ∝ t^−1.01 for the published data) |
+| `--simulate` | compute new data and draw the figure from them |
+| `--data=published\|generated\|FOLDER` | data to draw from (default: `published`) |
+| `--s=published\|generated\|FILE` | self-couplings of the simulations (default: those of the paper) |
+| `--tag=TAG` | write to `data/generated/TAG/`, to keep several runs |
+| `--force` | replace existing generated data |
+| `--out=PREFIX` | output name of the figure |
 
-WCST model: N = 500, g = 0.4. The s-network has the self-couplings of Fig. 1 and τ0 = 0.01 s; the τ0-network has no
-self-coupling and τ0 evenly spaced in [0.01, 0.05] s. Each run has 20 transient, 80 learning and 100 test trials, a
-20 % probability of rule change per trial, inputs g_card = 1.0 and g_error = 1.75, a ridge readout (β = 0.01) fed
-back into the network with the context feedback gain g_fb, and a power-law test of the closed-loop network from 100
-random initial states. In the code and in the data files g_fb is called g_b (`gb`).
+`scripts/self_couplings.jl` builds a new self-coupling vector as in the Methods (use it with `--s=generated`).
+The WCST sweep of `fig5.jl --simulate` includes the runs of Fig. 4: after it, run `fig4.jl --simulate --switch-only`.
 
-### Supplementary Figure S1: the autonomous network relaxes to a fixed point
+The simulations are seeded, except the WCST runs of Figs. 4b-c and 5 (unseeded, as in the study), so new results are
+statistically equivalent to the published ones, not identical. The published values of Fig. 3 come from an earlier
+NumPy implementation of the same protocol; `--simulate` gives values within 2 SEM of them. The data formats are
+described in [`data/README.md`](data/README.md).
 
-```bash
-julia scripts/figS1.jl                             # published data
-julia -t 16 scripts/figS1.jl --simulate            # new run (~1 h on 16 threads)
-julia -t 16 scripts/figS1.jl --simulate --seed=N --tag=TAG   # other networks: network k has the seed N + k - 1
-julia -t 8 scripts/figS1.jl --simulate --smoke     # quick test: few networks, short runs (data/generated/smoke/)
-```
-
-| Panel | Content | Default source |
-|---|---|---|
-| a | activity of the network with the median convergence time (g = 0.4; network 86 of the published run, 150 s) from r = 1 to 3 times its fixed-point time (dashed line: the fixed point), neurons in order of increasing s | `figS1/regime/example_*.tsv` |
-| b | fixed-point residual \|tanh(Jr) − r\|/√N of the networks that reach a fixed point (the network of a in dark; dashed line: the tolerance 10⁻⁷) | `figS1/regime/` |
-| c | two largest Lyapunov exponents λ1, λ2 of 100 networks for g = 0.38, 0.39, 0.40, 0.41, 0.42, one point per network (dashed line: 0; λ1 > 0 means chaos; axes up to 1 s⁻¹, larger values marked ▲ with their value) | `figS1/lyapunov/` |
-
-Model: as Fig. 1 (N = 500, τ0 = 0.01 s, dt = 1 ms, r = 1 at t = 0), with no input and no noise, simulated until the
-residual stays below 10⁻⁷ for 20 s (fixed point) or for 10,000 s. Lyapunov exponents: tangent-vector
-renormalization every 50 ms (Benettin et al. 1980), 100 s of alignment and 300 s of measurement after the convergence.
-Network k has the seed 30001 + k − 1; for each g the same off-diagonal couplings are scaled to spectral radius g.
-
-Results of the published run: at g = 0.4, 93 of 100 networks reach a fixed point after 445 s on average (95% CI
-308–605 s; median 150 s), with largest Lyapunov exponent −3.26 s⁻¹ (95% CI −3.56 to −2.95). Over g = 0.38–0.42,
-λ1 lies between −10.7 and −0.11 s⁻¹ at every fixed point (91–98 networks per g); 25 of the 500 trajectories end on a
-stable periodic orbit (|λ1| < 0.01 s⁻¹, λ2 < 0; at g = 0.4 the 7 networks without a fixed point, not shown in b). In
-the remaining one (g = 0.42) λ1 is compatible with 0 and λ2 < 0, but the full state does not recur within 5% at the
-periods searched (autocorrelation peaks up to 10 s and their multiples). No trajectory has a positive λ1.
-
-## Self-couplings
-
-`scripts/self_couplings.jl` builds the self-coupling vector as described in the Methods: a pilot simulation with s
-evenly spaced in [0.7, 1.7] measures τ(s), the fit τ(s) = a exp(b s^c) gives the distribution P(s) for which the unit
-timescales follow P(τ) ∝ τ⁻², and 500 values are drawn from P(s) by inverse transform sampling. The pilot gives
-a = 0.0156, b = 1.066, c = 2.85 (paper: 0.0165, 1.017, 2.99). With a new vector, Fig. 1 decays as t^−1.10 and the
-hRNN of Fig. 3 at T_sep = 0.2 s gives ρ = 0.81, 0.57, 0.42 at distances 1, 2, 3 (published: 0.82, 0.60, 0.46).
-
-The new vector is written to `data/generated/self_couplings.txt`; `--s=generated` uses it in the simulations
-(`s_file` in the first cell of the explorations).
-
-## Interactive exploration
-
-Two scripts are meant to be run cell by cell (`##` cells, e.g. in VS Code). All parameters are in the first cell,
-with the values of the paper as defaults; `save_figures = true` saves the plots to `figures/`.
-
-- `scripts/explore_timescales.jl` (Figs. 1-2, ~30 s): rasters and traces; τ(s), its fit and the implied P(s); the
-  power-law decay; amplitude, autocorrelation and time course of the recurrent input vs the OU input; coupled vs
-  decoupled network with the escape-time theory; the fit of σ_OU as in the Methods (`run_grid_search = true`).
-  It averages over 50 networks by default; with so few networks the timescale of a bistable unit is estimated as the
-  first time its mean activity drops below 1/e (`tau_method`).
-- `scripts/explore_wcst.jl` (Figs. 4-5, ~1 min): one network through the WCST task: inputs, readout fits, test
-  behaviour and accuracy, change of the self-couplings and of J, readout weights, state space (PCA and hysteresis,
-  as in Fig. 4d-e), decoding of the card features, power-law test.
-
-```bash
-julia scripts/explore_timescales.jl     # or open it in VS Code and run the cells
-```
+Two scripts explore the model interactively, cell by cell: `scripts/explore_timescales.jl` (Figs. 1-2) and
+`scripts/explore_wcst.jl` (Figs. 4-5).
 
 ## Repository structure
 
 ```
-scripts/
-  fig1.jl ... fig5.jl     one script per figure
-  figS1.jl                Supplementary Fig. S1
-  self_couplings.jl       new self-coupling vector (Methods)
-  explore_timescales.jl   interactive exploration of Figs. 1-2
-  explore_wcst.jl         interactive exploration of the WCST (Figs. 4-5)
-src/
-  project.jl              paths, command-line flags, activation of the environment
-  reservoir.jl            rate network: Network, simulate! (Euler), fit_readout, close_loop
-  timescales.jl           Figs. 1-2: coupled and OU-driven networks, fits of τ(s) and of the power law,
-                          P(s) and its sampling, escape-time theory
-  memory_task.jl          Fig. 3: stimulation protocol and correlations
-  wcst.jl                 Figs. 4-5: task, training, test, power-law test, sweep
-  wcst_plots.jl           plots of explore_wcst.jl
-  regime.jl               Fig. S1: fixed-point convergence, Lyapunov exponents
-  switch.jl               Fig. 4f: accuracy around a rule switch and its statistics
-  SVGFigure.jl            figure builder (layout in mm, Arial text, SVG/PDF/PNG)
-data/
-  README.md               layout and file formats
-  published/              self_couplings.txt, fig1/, fig2/, fig3/, wcst/, switch/, figS1/: data of the figures
-  generated/              data computed by the scripts (not under version control)
-assets/                   artwork of the published figures, embedded by the scripts (Fig. 4: one file per piece)
-figures/                  rendered figures; published/ (from data/published) is under version control
+scripts/     one script per figure, self_couplings.jl, two interactive explorations
+src/         model, tasks and analyses (reservoir.jl, timescales.jl, memory_task.jl, wcst.jl, regime.jl, ...)
+             and the figure builder (SVGFigure.jl)
+data/        published/: data of the figures; generated/: new runs (not under version control)
+assets/      artwork embedded in the figures
+figures/     rendered figures; published/ is under version control
 ```
 
 ## Citation
 
-If you use this code or data, please cite the paper above. Citation metadata for the paper and for this repository
-are in `CITATION.cff` (GitHub: "Cite this repository"); the DOI will be added after publication.
+Please cite the paper above (citation metadata in `CITATION.cff`, or "Cite this repository" on GitHub).
 
 ## License
 
-MIT License (`LICENSE`): it covers the code, the data (`data/`) and the figures and artwork (`figures/`, `assets/`).
+MIT (`LICENSE`), for the code, the data and the figures.

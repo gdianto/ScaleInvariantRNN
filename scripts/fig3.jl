@@ -1,21 +1,7 @@
-# Figure 3: delay-invariant short-term memory of the heterogeneous RNN.
-#
-#   a  stimulation scheme, population activity R(t) and raster of |r_j(t)| of one hRNN realization over one cycle
-#   b  hRNN: Pearson correlation between evoked states vs signed position distance, one row per T_sep
-#   c  the same vs |position distance| for hRNN, homogeneous network (hom) and echo-state network (esn)
-#      (mean ± SEM over 50 networks)
-#
-# Usage:
-#   julia scripts/fig3.jl                    # published values (data/published/fig3/fig3_values.csv)
-#   julia -t 9 scripts/fig3.jl --simulate    # new simulation of the 9 conditions (~2 min) -> data/generated/fig3
-#     --nets=50     networks per condition
-#     --seed=2026   seed, the same for all conditions (same matrices W)
-#   julia scripts/fig3.jl --data=generated   # figure from the data of an earlier run (or --data=FOLDER)
-# Other flags (--s, --tag, --force, --out): see README.md. The figure goes to figures/<data source>/fig3.
-#
-# Panel a and the timing schemes of b are artwork (assets/fig3_artwork.svg). The published values come from an
-# earlier NumPy implementation (seed 2026), which Julia cannot reproduce: --simulate gives statistically
-# equivalent values.
+# Figure 3: delay-invariant short-term memory (hRNN vs homogeneous and echo-state networks).
+#   julia scripts/fig3.jl                   # from data/published/fig3 (values of an earlier NumPy run)
+#   julia -t 9 scripts/fig3.jl --simulate   # new run (~2 min; --nets=50, --seed=2026)
+# Other flags (--data, --s, --tag, --force, --out): see README.md.
 include(joinpath(@__DIR__, "..", "src", "project.jl"))
 using LinearAlgebra, Random, Statistics, DelimitedFiles, Printf
 include(projectdir("src", "SVGFigure.jl")); using .SVGFigure
@@ -26,7 +12,6 @@ const TSEPS = [0.01, 0.05, 0.2]
 const NETWORK_ORDER = ["hRNN", "hom", "esn"]
 const COL = Dict("hRNN" => "#1b69af", "hom" => "#c2151b", "esn" => "#157333")
 
-# ------------------------------------------------------------------ simulation (--simulate)
 function simulate_all(nets::Int, seed::Int)
     BLAS.set_num_threads(1)                         # one BLAS thread per condition: results independent of -t
     jobs = [(net, m) for net in NETWORK_ORDER for m in MULTS]
@@ -34,7 +19,7 @@ function simulate_all(nets::Int, seed::Int)
     lk = ReentrantLock()
     Threads.@threads :dynamic for job in jobs
         net, m = job
-        # same seed for every condition: the networks share the same random matrices W (paired comparison)
+        # same seed for every condition: the networks share the same matrices W
         c = run_memory_task(net, m; n_networks=nets, rng=Xoshiro(seed))
         lock(lk) do
             res[(net, m)] = c
@@ -45,12 +30,11 @@ function simulate_all(nets::Int, seed::Int)
     return res
 end
 
-# ------------------------------------------------------------------ table I/O
 function write_csv(path, res)
     open(path, "w") do io
         println(io, "network,Tsep_s,d,rho_mean,rho_sem")
         for (net, m) in sort(collect(keys(res)))
-            a = res[(net, m)]                       # distances x networks
+            a = res[(net, m)]
             mu = vec(mean(a, dims=2)); se = vec(std(a, dims=2)) ./ sqrt(size(a, 2))
             for (i, d) in enumerate(-3:3)
                 @printf(io, "%s,%s,%d,%.4f,%.4f\n", net, @sprintf("%g", MTAU*m), d, mu[i], se[i])
@@ -70,8 +54,6 @@ function read_csv(path)
     return tab
 end
 
-# ------------------------------------------------------------------ figure
-# error bar: vertical segment and caps of half-width `cap` mm
 function errorbar!(ax, x, y, e; color, width, cap)
     X = xmm(ax, x)
     line!(ax.fig, [X, X], [ymm(ax, y - e), ymm(ax, y + e)]; color=color, width=width, cap="butt")
@@ -82,10 +64,9 @@ end
 
 function fig3(tab, out)
     fig = Figure(180, 98.957909)
-    embed!(fig, assetsdir("fig3_artwork.svg"))      # panel a and the timing schemes of panel b
+    embed!(fig, assetsdir("fig3_artwork.svg"))
 
-    # ---- b: hRNN, correlation vs signed position distance (one row per T_sep)
-    # per row: frame [left, right, top, bottom], bar outline colour, bottom-spine width, label positions
+    # b: hRNN, correlation vs signed position distance
     rows_b = [(100.388, 116.300, 5.240, 32.065, "#808080", 0.71, (98.04, 7.40), (97.71, 32.94), 26.27),
               (100.438, 116.351, 35.186, 62.011, "#808080", 0.71, (98.12, 37.35), (97.78, 62.88), 55.64),
               (100.413, 116.325, 65.133, 91.958, "#7f7f7f", 0.85, (98.08, 67.30), (97.74, 92.83), 85.59)]
@@ -110,7 +91,7 @@ function fig3(tab, out)
     for (s, x) in (("-3", 100.47), ("0", 107.69), ("3", 114.51)); text!(fig, x, 94.93, s); end
     text!(fig, 99.14, 97.78, "position distance")
 
-    # ---- c: correlation vs |position distance| for the three networks
+    # c: correlation vs |position distance|, three networks
     text!(fig, 126.29, 2.83, "c"; size=10, weight="bold")
     rows_c = [(133.783, 160.564, 5.948, 31.530, (131.28, 6.79, 7.0), (130.95, 32.33, 7.0), 25.48),
               (133.866, 160.566, 35.909, 61.567, (131.38, 36.67, 6.79), (131.29, 62.32, 6.79), 55.48),
@@ -141,7 +122,6 @@ function fig3(tab, out)
     return save(fig, out)
 end
 
-# ------------------------------------------------------------------ main
 if hasflag("simulate")
     include(projectdir("src", "reservoir.jl")); include(projectdir("src", "memory_task.jl"))
     dir = new_data_dir("fig3")

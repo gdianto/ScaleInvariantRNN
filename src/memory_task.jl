@@ -1,7 +1,5 @@
-# Short-term memory task of Fig. 3: six orthogonal stimuli presented in a repeating sequence; Pearson correlation
-# between the evoked states as a function of their position distance. The transient cycles run only before the
-# first saved cycle, so the saved cycles are contiguous and correlations across cycle boundaries are at the true
-# distance. Requires src/project.jl and src/reservoir.jl.
+# Short-term memory task of Fig. 3: correlation between the states evoked by six stimuli vs their position distance.
+# Requires src/project.jl and src/reservoir.jl.
 
 using LinearAlgebra, Random, Statistics, DelimitedFiles
 

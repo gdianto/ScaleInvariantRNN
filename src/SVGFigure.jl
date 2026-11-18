@@ -1,9 +1,5 @@
-# Minimal SVG figure builder used to draw the paper figures at their published size and layout.
-#
-# Coordinates are in mm from the top-left corner of the page; line widths and font sizes in pt.
-# Text is real SVG text in Arial (editable in Inkscape); `_{...}` and `^{...}` in a string give
-# sub- and superscripts (65% size, as in the published figures, but never below MIN_PT = 5 pt: 72% of 7 pt).
-# PDF/PNG are exported with Inkscape.
+# Minimal SVG figure builder: coordinates in mm from the top-left corner, line widths and font sizes in pt, Arial
+# text with `_{...}`/`^{...}` sub/superscripts (never below MIN_PT); PDF/PNG exported with Inkscape.
 module SVGFigure
 
 using Base64, Printf
@@ -36,8 +32,7 @@ function Axes(fig::Figure; left, right, top, bottom, xlim, ylim, xscale=:identit
     print(fig.defs, "<clipPath id=\"$id\"><rect x=\"$(fmt(left))\" y=\"$(fmt(top))\" width=\"$(fmt(right-left))\" height=\"$(fmt(bottom-top))\"/></clipPath>\n")
     Axes(fig, left, right, top, bottom, Float64.(xlim), Float64.(ylim), xscale == :log10, yscale == :log10, id)
 end
-# Axes from measured mappings mm = c0 + c1*u (u = value, or log10(value) for a log scale), with the box
-# [left, right] x [top, bottom] (mm) used for clipping
+# Axes from measured mappings mm = c0 + c1*u (u = value or log10 value); the box is used for clipping
 function Axes(fig::Figure, box::NTuple{4,Real}, xmap::NTuple{2,Real}, ymap::NTuple{2,Real}; xscale=:identity, yscale=:identity)
     left, right, top, bottom = box
     u(m, map) = (m - map[1]) / map[2]
@@ -56,7 +51,6 @@ function ymm(ax::Axes, y)
     return ax.bottom - (_t(y, ax.ylog) - a) / (b - a) * (ax.bottom - ax.top)
 end
 
-# ------------------------------------------------------------------ primitives (mm)
 function _stroke(color, width, opacity, dash, cap, join)
     s = "fill=\"none\" stroke=\"$(colorstr(color))\" stroke-width=\"$(fmt(width*PT))\" stroke-linecap=\"$cap\" stroke-linejoin=\"$join\""
     opacity < 1 && (s *= " stroke-opacity=\"$(fmt(opacity))\"")
@@ -120,8 +114,7 @@ function image!(fig::Figure, x, y, w, h, png; pixelated=false, clip=nothing)
 end
 raw!(fig::Figure, s::AbstractString) = print(fig.body, s, "\n")
 
-# Minimal PNG encoder (8-bit RGB, uncompressed deflate blocks) for heatmaps drawn from data.
-# `rgb[i, j]` = (r, g, b) of pixel row i (top to bottom), column j.
+# Minimal PNG encoder (8-bit RGB, uncompressed) for heatmaps; rgb[i, j] = (r, g, b) of row i (top to bottom), column j
 function png_bytes(rgb::AbstractMatrix{NTuple{3,UInt8}})
     h, w = size(rgb)
     crc_table = [begin c = UInt32(n); for _ in 1:8; c = isodd(c) ? 0xedb88320 ⊻ (c >> 1) : c >> 1; end; c end for n in 0:255]
@@ -130,10 +123,10 @@ function png_bytes(rgb::AbstractMatrix{NTuple{3,UInt8}})
     chunk(t, d) = vcat(be32(UInt32(length(d))), Vector{UInt8}(t), d, be32(crc(vcat(Vector{UInt8}(t), d))))
     raw = UInt8[]
     for i in 1:h
-        push!(raw, 0x00)                                    # filter: none
+        push!(raw, 0x00)
         for j in 1:w; append!(raw, rgb[i, j]); end
     end
-    z = UInt8[0x78, 0x01]                                   # zlib header, stored blocks
+    z = UInt8[0x78, 0x01]
     for (k, i0) in enumerate(1:65535:length(raw))
         blk = raw[i0:min(i0 + 65534, length(raw))]; n = length(blk)
         push!(z, i0 + 65535 > length(raw) ? 0x01 : 0x00)
@@ -146,7 +139,6 @@ function png_bytes(rgb::AbstractMatrix{NTuple{3,UInt8}})
     return vcat(UInt8[0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], chunk("IHDR", ihdr), chunk("IDAT", z), chunk("IEND", UInt8[]))
 end
 
-# ------------------------------------------------------------------ data coordinates
 function plot!(ax::Axes, x, y; clip=true, kw...)
     line!(ax.fig, [xmm(ax, v) for v in x], [ymm(ax, v) for v in y]; clip=clip ? ax.clip : nothing, kw...)
 end
@@ -173,16 +165,15 @@ function scatter!(ax::Axes, x, y; r=0.3, fill="#000000", fill_opacity=1.0, strok
     end
 end
 
-# Iso-line of Z (Z[i, j] at (x[j], y[i]), as Plots.contour) at `level`, by marching squares on the grid;
-# drawn as one path of segments in data coordinates.
+# Iso-line of Z (Z[i, j] at (x[j], y[i])) at `level`, by marching squares
 function contour!(ax::Axes, x, y, Z, level; color="#000000", width=0.64, opacity=1.0, clip=true)
     seg = IOBuffer()
     interp(a, b, za, zb) = a + (level - za) / (zb - za) * (b - a)
     for i in 1:length(y)-1, j in 1:length(x)-1
-        z = (Z[i, j], Z[i, j+1], Z[i+1, j+1], Z[i+1, j])                  # corners: (x_j,y_i) (x_j+1,y_i) (x_j+1,y_i+1) (x_j,y_i+1)
+        z = (Z[i, j], Z[i, j+1], Z[i+1, j+1], Z[i+1, j])
         p = ((x[j], y[i]), (x[j+1], y[i]), (x[j+1], y[i+1]), (x[j], y[i+1]))
         pts_ = Tuple{Float64,Float64}[]
-        for (a, b) in ((1, 2), (2, 3), (3, 4), (4, 1))                    # edges crossed by the level
+        for (a, b) in ((1, 2), (2, 3), (3, 4), (4, 1))
             if (z[a] < level) != (z[b] < level)
                 push!(pts_, (interp(p[a][1], p[b][1], z[a], z[b]), interp(p[a][2], p[b][2], z[a], z[b])))
             end
@@ -199,7 +190,7 @@ end
 function embed!(fig::Figure, svgfile::AbstractString; x=0.0, y=0.0, w=fig.w, h=fig.h)
     s = read(svgfile, String)
     vb = match(r"viewBox=\"([^\"]+)\"", s).captures[1]
-    a = findfirst('>', s[findfirst("<svg", s)[1]:end]) + findfirst("<svg", s)[1] - 1    # end of the <svg ...> tag
+    a = findfirst('>', s[findfirst("<svg", s)[1]:end]) + findfirst("<svg", s)[1] - 1
     inner = s[a+1:findlast("</svg>", s)[1]-1]
     print(fig.body, "<svg x=\"$(fmt(x))\" y=\"$(fmt(y))\" width=\"$(fmt(w))\" height=\"$(fmt(h))\" viewBox=\"$vb\" ",
           "xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\" xmlns:sodipodi=\"http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd\">",
@@ -216,7 +207,6 @@ function place!(fig::Figure, svgfile::AbstractString, dx, dy)
           inner, "</g>\n")
 end
 
-# ------------------------------------------------------------------ axes decorations
 # Spine along the bottom (or top) with outward ticks and tick labels (baseline `labeloffset` mm below the spine)
 function xaxis!(ax::Axes; ticks=Float64[], labels=string.(ticks), ticklen=0.526, width=0.63, size=7.0,
                 labeloffset=2.78, spine=true, at=:bottom, labelanchor="middle", labeldx=0.0)
@@ -242,7 +232,6 @@ function yaxis!(ax::Axes; ticks=Float64[], labels=string.(ticks), ticklen=0.526,
     end
 end
 
-# ------------------------------------------------------------------ output
 # Writes PREFIX.svg; with `formats` containing "pdf"/"png" also exports them with Inkscape (if installed)
 function save(fig::Figure, prefix::AbstractString; formats=("svg", "pdf", "png"), dpi=300)
     svg = "$prefix.svg"
@@ -270,4 +259,4 @@ function save(fig::Figure, prefix::AbstractString; formats=("svg", "pdf", "png")
     return done
 end
 
-end # module
+end

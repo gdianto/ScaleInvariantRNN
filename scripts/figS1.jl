@@ -1,23 +1,10 @@
-# Supplementary Figure S1: the autonomous network of the paper relaxes to a fixed point (no input, no noise, r = 1 at t = 0).
-#
-#   a  activity r_i(t) of the network with the median convergence time (g = 0.4) up to its fixed point (neurons in
-#      order of increasing s); log time
-#   b  fixed-point residual |tanh(Jr) - r|/√N of the networks that reach a fixed point (the network of a highlighted)
-#   c  two largest Lyapunov exponents λ1 (top) and λ2 (bottom) of 100 networks for g = 0.38-0.42 (one point per network)
-#
-# Usage:
-#   julia scripts/figS1.jl                              # published data (data/published/figS1)
-#   julia -t 16 scripts/figS1.jl --simulate             # new run (~1 h on 16 threads) -> data/generated/figS1
-#     --seed=30001  network k uses the seed seed + k - 1 (the same networks in the three panels)
-#   julia -t 8 scripts/figS1.jl --simulate --smoke      # quick test: short runs, few networks (data/generated/smoke/figS1)
-#   julia scripts/figS1.jl --data=generated             # figure from the data of an earlier run (or --data=FOLDER)
-# Other flags (--s, --tag, --force, --out): see README.md. The figure goes to figures/<data source>/figS1.
-#
-# The simulation is seeded (network k: seed 30001 + k - 1 by default): it is bit-reproducible whatever the number of
-# threads.
+# Supplementary Figure S1: the autonomous network relaxes to a fixed point.
+#   julia scripts/figS1.jl                    # from data/published/figS1
+#   julia -t 16 scripts/figS1.jl --simulate   # new run, seed 30001 (~1 h; --smoke: quick test)
+# Other flags (--data, --s, --tag, --force, --out): see README.md.
 include(joinpath(@__DIR__, "..", "src", "project.jl"))
 using DelimitedFiles, LinearAlgebra, Random, Statistics, Printf
-import Plots                                              # colour map
+import Plots
 include(projectdir("src", "SVGFigure.jl")); using .SVGFigure
 include(projectdir("src", "reservoir.jl"))
 include(projectdir("src", "timescales.jl"))
@@ -25,7 +12,6 @@ include(projectdir("src", "regime.jl"))
 
 const TEAL, DARK = "#4a7b81", "#1a0e34"
 
-# ------------------------------------------------------------------ simulation (--simulate)
 function simulate(smoke::Bool, seed::Int)
     dir = new_data_dir("figS1")
     s = vec(readdlm(self_couplings_file(), ',', Float64))
@@ -36,7 +22,6 @@ function simulate(smoke::Bool, seed::Int)
     println("Data in $dir")
 end
 
-# ------------------------------------------------------------------ data
 readtsv(f; T=Any) = readdlm(f, '\t', T; header=true)[1]
 
 "Fig. S1 data in `dir` (layout of data/published/figS1)."
@@ -48,10 +33,10 @@ function load_data(dir)
     converged = [x == true || x == "true" for x in net[:, 3]]
     confirmation = Float64.(net[:, 5])
     activity = readdlm(joinpath(dir, "regime", "example_activity.tsv"), '\t', Float64)
-    # residual of each network that reaches a fixed point, up to the confirmation of the fixed point
+    # residual of each network that reaches a fixed point
     residuals = [(n = Int(net[k, 1]); m = (res[:, 1] .== n) .& (res[:, 3] .<= confirmation[k]); (res[m, 3], res[m, 4]))
                  for k in axes(net, 1) if converged[k]]
-    # network of panel a: the one whose fixed point is the last state of the example
+    # network of panel a
     fixed_point(k) = Float64.(states[states[:, 1] .== net[k, 1], 7])
     example = findfirst(k -> converged[k] && maximum(abs.(fixed_point(k) .- activity[:, end])) < 1e-4, axes(net, 1))
     ly = rd("lyapunov", "lyapunov_vs_g.tsv")
@@ -61,7 +46,6 @@ function load_data(dir)
             g=Float64.(ly[:, 1]), λ1=Float64.(ly[:, 6]), λ2=Float64.(ly[:, 9]))
 end
 
-# ------------------------------------------------------------------ figure
 "Deterministic horizontal jitter of the `k`-th point: `n` columns of half-width `w`."
 jitter(k, w; n=9) = w * (2 * ((k - 1) % n) / (n - 1) - 1)
 
@@ -77,7 +61,7 @@ function figS1(data, out)
     pow10(e) = "10^{$e}"
     ticklabel(v) = v == round(v) ? string(round(Int, v)) : string(v)
 
-    # ---- a: activity of one network up to its fixed point (RdBu, ±1 as Fig. 1b); neurons in the order of s (increasing)
+    # a: activity of one network up to its fixed point (neurons in order of s)
     letter!(1.5, 3.5, "a")
     N, t = size(data.activity, 1), data.t
     ax = Axes(fig; left=13.0, right=56.0, top=5.0, bottom=36.0, xscale=:log10, xlim=(t[1], t[end]), ylim=(0.5, N + 0.5))
@@ -95,7 +79,7 @@ function figS1(data, out)
     yaxis!(ax; ticks=yticks, labels=string.(yticks), baselineshift=0.75)
     text!(fig, 34.5, 42.0, "time, t [s]"; anchor="middle")
     text!(fig, 5.0, 20.5, "neuron index"; anchor="middle", rotate=-90)
-    cb = (x=58.0, w=1.5, top=8.0, bottom=33.0)                                # colour bar
+    cb = (x=58.0, w=1.5, top=8.0, bottom=33.0)
     image!(fig, cb.x, cb.top, cb.w, cb.bottom - cb.top, png_bytes([pixel(v) for v in range(1, -1, length=100), _ in 1:1]))
     for (v, y) in ((1, cb.top), (0, (cb.top + cb.bottom) / 2), (-1, cb.bottom))
         line!(fig, [cb.x + cb.w, cb.x + cb.w + 0.5], [y, y]; width=0.63, cap="butt")
@@ -103,7 +87,7 @@ function figS1(data, out)
     end
     text!(fig, cb.x + cb.w / 2, cb.top - 1.5, "r"; anchor="middle")
 
-    # ---- b: fixed-point residual of the networks that reach a fixed point
+    # b: fixed-point residual
     letter!(68.0, 3.5, "b")
     decades = 0:ceil(Int, log10(maximum(x[end] for (x, _) in data.residuals)))      # up to the slowest fixed point
     ax = Axes(fig; left=81.0, right=122.0, top=5.0, bottom=36.0, xscale=:log10, yscale=:log10, xlim=(1.0, 10.0^decades[end]),
@@ -124,7 +108,7 @@ function figS1(data, out)
     text!(fig, 101.5, 42.0, "time, t [s]"; anchor="middle")
     text!(fig, 70.5, 20.5, "‖tanh(Jr) − r‖ / √N"; anchor="middle", rotate=-90)
 
-    # ---- c: two largest Lyapunov exponents vs g, shared x axis
+    # c: two largest Lyapunov exponents vs g
     letter!(127.5, 3.5, "c")
     gs = sort(unique(data.g))
     xlim = (gs[1] - 0.006, gs[end] + 0.006)
@@ -151,6 +135,5 @@ function figS1(data, out)
     return save(fig, out)
 end
 
-# ------------------------------------------------------------------ main
 hasflag("simulate") && simulate(hasflag("smoke"), parse(Int, flagvalue("seed", string(REGIME.seed))))
 figS1(load_data(data_dir("figS1")), figure_path("figS1"))

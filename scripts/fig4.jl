@@ -1,31 +1,12 @@
 # Figure 4: strategy of the heterogeneous network in the WCST (s-network, g_b = 0.8).
-#
-#   a     the task (central card and the correct choice in each context) and the reservoir with its inputs and readouts
-#   b     maximum readout weight of each network vs the self-coupling of the unit (response, context), with kernel
-#         density estimates (50 networks); with --gaussian, Gaussian fits instead
-#   c     sorted self-couplings before learning, and after learning (mean ± std over 50 networks)
-#   d, e  state space of one network realization (PCA projections, hysteresis)
-#   f     accuracy on the last trial before a rule switch and on the first four after it when, during the test, each
-#         error signal is halved with probability p = 0 (black) or 0.75 (grey) (mean ± SEM over 200 networks)
-#
-# Usage:
-#   julia scripts/fig4.jl                    # published data (data/published/wcst, data/published/switch)
-#   julia -t 16 scripts/fig4.jl --simulate   # only the runs of Fig. 4: 50 s-network runs at g_b = 0.8 (~1 CPU-hour) and the
-#                                            # switch runs of panel f (~3 min) -> data/generated/{wcst,switch}
-#                                            # (scripts/fig5.jl --simulate makes the whole WCST sweep)
-#     --nets=200                             # networks of the switch runs (network k: seed 2026 + k)
-#     --switch-only                          # only the switch runs (e.g. after scripts/fig5.jl --simulate)
-#   julia scripts/fig4.jl --data=generated   # figure from the data of an earlier run (or --data=FOLDER)
-#   julia scripts/fig4.jl --gaussian         # panel b with Gaussian fits (figure fig4_gaussian)
-# Other flags (--s, --tag, --force, --out): see README.md. The figure goes to figures/<data source>/fig4.
-#
-# Layout (178 x 88 mm, as the manuscript): four columns 41.25 mm wide with 3.5 mm gutters; a (two columns), b, c on
-# top; d (two columns), e, f below. The reservoir of panel a and panels d, e (one unseeded network) are artwork: pieces
-# of the published Fig. 4 in its page coordinates (assets/fig4_artwork_*.svg), placed here with a shift; the reservoir
-# includes the retouches of the manuscript version. The task sketch of panel a is drawn here.
+#   julia scripts/fig4.jl                    # from data/published/{wcst,switch}
+#   julia -t 16 scripts/fig4.jl --simulate   # 50 WCST runs (~1 CPU-hour) and the switch runs of panel f (~3 min)
+#     --switch-only                          # only the switch runs (--nets=200 networks)
+#   julia scripts/fig4.jl --gaussian         # panel b with Gaussian fits instead of density estimates
+# Other flags (--data, --s, --tag, --force, --out): see README.md.
 include(joinpath(@__DIR__, "..", "src", "project.jl"))
 using DelimitedFiles, Statistics, LinearAlgebra, Printf
-import Plots, Distributions                               # colour maps; Gaussian fit
+import Plots, Distributions
 include(projectdir("src", "SVGFigure.jl")); using .SVGFigure
 include(projectdir("src", "switch.jl"))
 
@@ -35,9 +16,9 @@ const PRE_COLOR = hexcolor(Plots.cgrad(:batlow, 5, categorical=true)[2])
 const POST_COLOR = hexcolor(Plots.cgrad(:batlow, 5, categorical=true)[4])
 const CMAP_CONTEXT = Plots.cgrad([:purple4, :mediumorchid3, :plum3, :white])
 const CMAP_RESPONSE = Plots.cgrad([:darkgreen, :seagreen, :darkseagreen, :white])
-const CARD_YELLOW, CARD_TEAL = "#fac938", "#61b5bd"      # card symbols and frames, as the card inputs of the schematic
+const CARD_YELLOW, CARD_TEAL = "#fac938", "#61b5bd"
 const FRAME_YELLOW, FRAME_BLUE = "#ffbd39", "#5b91b2"
-const RULE_COLOR, RULE_SHAPE = "#3399ff", "#ff4c4c"      # context: color, shape (as in d, e)
+const RULE_COLOR, RULE_SHAPE = "#3399ff", "#ff4c4c"      # context: color, shape
 const ERROR_RED = "#d95b4f"
 
 # grid (mm): columns, axes of b, c, f inside a column, rows
@@ -49,7 +30,7 @@ const PIECES = [("network", 2.8167, 0.5292), ("d_left", -42.383332, 0.0), ("d_ri
 const TASK = (x=4.4307, y=4.1292, w=20.566, h=31.3, rx=1.028, cx=14.6457)   # task sketch: box and centre of its content
 const INPUT_X, ERROR_Y, ERROR_NODE_X = 26.6167, 21.2622, 37.7597  # start of the input lines, error input: height, node centre
 const P_STYLE = Dict(0.0 => (line="#2b2a29", mark="#000000", bar=0.45), 0.75 => (line="#808080", mark="#808080", bar=0.5))
-const CONTEXT_COLOR = "#800080"                           # rule switch: the context readout of panel b
+const CONTEXT_COLOR = "#800080"
 
 function load_results(dir)
     rd(f) = readdlm(joinpath(dir, f), ' ')
@@ -77,7 +58,6 @@ function kde_grid(X, Y)
     return xr, yr, Z
 end
 
-# ------------------------------------------------------------------ drawing helpers
 letter!(fig, x, y, s) = text!(fig, x, y, s; size=10, weight="bold")
 "Legend items (kind :dot or :ring, colour, label[, opacity]) at the x positions `xs`, baseline y."
 function legend!(fig, xs, y, items)
@@ -128,10 +108,9 @@ function rounded_line!(fig, pts; r, color, width, stretch=1.0)
               "stroke-linecap=\"butt\" stroke-linejoin=\"round\"/>")
 end
 
-# ------------------------------------------------------------------ panels
-"a: task sketch (central card, the correct choice in each context) and the reservoir; the inputs leave the task box."
+"a: task sketch and reservoir."
 function panel_a!(fig)
-    xp, y = INPUT_X + 5.6, ERROR_Y                        # error input with a pulse, as the card inputs; under its node
+    xp, y = INPUT_X + 5.6, ERROR_Y
     rounded_line!(fig, [(INPUT_X, y), (xp - 0.75, y), (xp - 0.5, y - 0.9), (xp + 0.5, y - 0.9), (xp + 0.75, y),
                         (ERROR_NODE_X, y)]; r=0.3, color=ERROR_RED, width=0.75, stretch=1.9447)   # pulse 1.75 mm high
     for (name, dx, dy) in PIECES
@@ -139,7 +118,7 @@ function panel_a!(fig)
     end
     letter!(fig, COL[1], 2.63, "a")
     (; x, y, w, h, rx, cx) = TASK
-    xl, xr, yc0, yc = cx - 6.4, cx + 6.4, y + 6.9, y + h - 9.0          # central card, oriented cards
+    xl, xr, yc0, yc = cx - 6.4, cx + 6.4, y + 6.9, y + h - 9.0
     rect!(fig, x, y, w, h; fill="#f0f0f0", rx)
     text!(fig, cx, y + 4.1, "central card"; anchor="middle")
     card!(fig, cx, yc0, :triangle, CARD_YELLOW, FRAME_YELLOW)
@@ -162,11 +141,11 @@ function panel_b!(fig, data, X; kde)
     pts(R) = (m = findmax(R, dims=2); (data.gds_post[m[2]][:], m[1][:] ./ maximum(m[1])))
     xc, yc = pts(data.read_context); xr, yr = pts(data.read_response)
     gc, gr = density(xc, yc), density(xr, yr)
-    zlims = extrema(vcat(vec(gc[3]), vec(gr[3])))                          # shared colour range of the subplot
+    zlims = extrema(vcat(vec(gc[3]), vec(gr[3])))
     levels = range(zlims..., length=n_levels + 2)[2:end-1]
     for ((x, y), (gx, gy, Z), cmap, c) in (((xc, yc), gc, CMAP_CONTEXT, "#800080"), ((xr, yr), gr, CMAP_RESPONSE, "#2e8b57"))
         for (i, l) in enumerate(levels)                                    # the two outer levels opaque
-            k = round(Int, 255 * (l - zlims[1]) / (zlims[2] - zlims[1]))      # GR colour index of the level
+            k = round(Int, 255 * (l - zlims[1]) / (zlims[2] - zlims[1]))
             contour!(ax, gx, gy, Z, l; color=hexcolor(cmap[k / 255]), width=0.66, opacity=i <= 2 ? 1.0 : line_opacity)
         end
         scatter!(ax, x, y; r, fill=c, fill_opacity=marker_opacity, stroke=outline, width=0.25)
@@ -195,28 +174,28 @@ function panel_c!(fig, data, X)
     legend!(fig, [xm - 7.2, xm + 0.6], 4.4, [(:dot, "#205e60", "pre", 0.5), (:dot, POST_COLOR, "post")])
 end
 
-"f: accuracy (mean ± SEM) on the last trial before a rule switch and on the first four after it, one line per p."
+"f: accuracy around a rule switch, one line per p."
 function panel_f!(fig, stats, X)
     letter!(fig, X, ROW2 + 2.63, "f")
     ax = cell_axes(fig, X, ROW2 + 6.03, "", "accuracy"; xlim=(0.4, 5.6), ylim=(0.0, 1.0), w=29.4, ylabelx=3.99)
-    plot!(ax, [0.4, 5.6], [0.5, 0.5]; color="#000000", width=0.45, dash=(2.4, 2.4), cap="butt")      # chance
-    X1 = xmm(ax, 1.5)                                                                               # rule switch
+    plot!(ax, [0.4, 5.6], [0.5, 0.5]; color="#000000", width=0.45, dash=(2.4, 2.4), cap="butt")
+    X1 = xmm(ax, 1.5)
     line!(fig, [X1, X1], [ax.bottom, ax.top]; color="#808080", width=0.75, dash=(0.75, 0.75), cap="butt")
     text!(fig, X1, ax.top - 1.8, "rule switch"; anchor="middle", color=CONTEXT_COLOR)
     xaxis!(ax; ticks=1:5, labels=["", "1", "2", "3", "4"], labeloffset=3.13, TICKS...)
-    text!(fig, xmm(ax, 1), ax.bottom + 3.13, "last"; anchor="middle", color="#2b2a29")             # as in the manuscript
+    text!(fig, xmm(ax, 1), ax.bottom + 3.13, "last"; anchor="middle", color="#2b2a29")             # near-black of the published figure
     yaxis!(ax; ticks=0:0.25:1, labels=["0", "", "0.5", "", "1.0"], labeloffset=1.03, baselineshift=0.79, TICKS...)
     text!(fig, (ax.left + ax.right) / 2, ax.bottom + 6.25, "trial position"; anchor="middle")
     for (p, st) in reverse(stats)                                                                   # p = 0 on top
         c = P_STYLE[p]
-        for k in 1:5                                                                                # error bars
+        for k in 1:5
             x, lo, hi = xmm(ax, k), ymm(ax, st.m[k] - st.se[k]), ymm(ax, st.m[k] + st.se[k])
             line!(fig, [x, x], [lo, hi]; color=c.mark, width=c.bar, cap="butt")
             for v in (lo, hi)
                 line!(fig, [x - 0.405, x + 0.405], [v, v]; color=c.mark, width=c.bar, cap="butt")
             end
         end
-        for k in 1:5                                                                                # markers (1 mm squares)
+        for k in 1:5
             rect!(fig, xmm(ax, k) - 0.5, ymm(ax, st.m[k]) - 0.5, 1.0, 1.0; fill=c.mark)
         end
         plot!(ax, 1:5, st.m; color=c.line, width=0.75, clip=false)
@@ -231,14 +210,13 @@ function fig4(data, stats, out; kde=true)
     panel_c!(fig, data, COL[4])
     letter!(fig, COL[1], ROW2 + 2.63, "d"); letter!(fig, COL[3], ROW2 + 2.63, "e")
     panel_f!(fig, stats, COL[4])
-    xm = (COL[1] + COL[3] + 41.25) / 2                                       # legend of d, e, centred under them
+    xm = (COL[1] + COL[3] + 41.25) / 2
     legend!(fig, xm - 59.5 .+ [0, 22.5, 47.5, 76.0, 96.5, 120.0], ROW2 + 43.7,
             [(:ring, "#661919", "central card"), (:dot, "#e54ce5", "response: left"), (:dot, "#33e54c", "response: right"),
              (:ring, "#000000", "error signal"), (:dot, "#ff4c4c", "context: shape"), (:dot, "#3399ff", "context: color")])
     return save(fig, out)
 end
 
-# ------------------------------------------------------------------ main
 if hasflag("simulate")
     include(projectdir("src", "reservoir.jl")); include(projectdir("src", "wcst.jl"))
     hasflag("switch-only") || run_wcst_sweep(; variants=["s"], g_contexts=[GB], reps=50, outdir=new_data_dir("wcst"))

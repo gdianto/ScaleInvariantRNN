@@ -1,12 +1,6 @@
-# Self-couplings with the distribution P(s) for which the unit timescales follow P(τ) ∝ τ^-2 (Methods):
-#   1. pilot: s evenly spaced in [smin, smax]; τ(s) measured as in Fig. 1 and fitted with a exp(b s^c);
-#   2. N values drawn from P(s) by inverse transform sampling (sorted).
-# The published vector data/published/self_couplings.txt was made this way; a new one is equivalent, not
-# identical. Use it in any simulation with --s=generated.
-#
-#   julia scripts/self_couplings.jl            # pilot of 500 networks (~2 min), seed 1 -> data/generated/self_couplings.txt
-#     --seed=1  --pilot-networks=500   (fewer networks give unreliable τ for the bistable units, s > 1)
-#     --tag, --force: see README.md
+# New self-coupling vector (Methods): pilot run, fit of τ(s), N values drawn from the P(s) giving P(τ) ∝ τ^-2.
+#   julia scripts/self_couplings.jl   # -> data/generated/self_couplings.txt (use it with --s=generated)
+#     --seed=1  --pilot-networks=500
 include(joinpath(@__DIR__, "..", "src", "project.jl"))
 using DelimitedFiles, Printf, Random
 include(projectdir("src", "reservoir.jl"))
@@ -18,7 +12,7 @@ c = merge(FIG1, (n_networks=parse(Int, flagvalue("pilot-networks", "500")), seed
 pilot = collect(range(smin, smax; length=c.n_units))
 println("Pilot: $(c.n_units) units with s evenly spaced in [$smin, $smax], $(c.n_networks) networks")
 τ = fit_unit_timescales(simulate_fig1(c, pilot).mean_activity, pilot, saved_times(c), c.dt)
-ok = isfinite.(τ) .& (τ .> 0)                            # all units, unless the pilot is very short
+ok = isfinite.(τ) .& (τ .> 0)
 fit = fit_tau(pilot[ok], τ[ok])
 @printf("τ(s) = a exp(b s^c): a = %.5g, b = %.5g, c = %.5g (R² log10 τ = %.4f)\n", fit.params..., fit.r2_log)
 

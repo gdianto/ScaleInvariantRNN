@@ -1,24 +1,10 @@
 # Figure 1: heterogeneous self-couplings generate multiple timescales and a scale-invariant decay.
-#
-#   a  network schematic; distribution of s and the P(s) derived from the τ(s) fit
-#   b  self-couplings, activity of one network and network-averaged activity
-#   c  single-trial activity of four units (s = 0.70, 0.80, 1.00, 1.23)
-#   d  network-averaged activity of the same units
-#   e  relaxation time τ vs s, fit τ(s) = a exp(b s^c)
-#   f  population activity ⟨R(t)⟩ and power-law fit (0.07-0.9 s)
-#
-# Usage:
-#   julia scripts/fig1.jl                     # published data (data/published/fig1)
-#   julia scripts/fig1.jl --simulate          # new run, 500 networks x 500 units (seed 1234, ~2 min) -> data/generated/fig1
-#   julia scripts/fig1.jl --simulate --smoke  # quick test, 40 units, 2 networks (data/generated/smoke/fig1)
-#   julia scripts/fig1.jl --data=generated    # figure from the data of an earlier run (or --data=FOLDER)
-# Other flags (--s, --tag, --force, --out): see README.md. The figure goes to figures/<data source>/fig1.
-#
-# Panel b of the published data is artwork (assets/fig1_panel_b_example.svg); generated data include the rasters.
-# Axes, labels and schematic: assets/fig1_layout.svg.
+#   julia scripts/fig1.jl              # from data/published/fig1
+#   julia scripts/fig1.jl --simulate   # new run, seed 1234 (~2 min; --smoke: quick test)
+# Other flags (--data, --s, --tag, --force, --out): see README.md.
 include(joinpath(@__DIR__, "..", "src", "project.jl"))
 using DelimitedFiles, Statistics, Printf
-import Plots                                              # colour maps
+import Plots
 include(projectdir("src", "SVGFigure.jl")); using .SVGFigure
 include(projectdir("src", "reservoir.jl"))
 include(projectdir("src", "timescales.jl"))
@@ -28,8 +14,7 @@ const TRACE_COLORS = ["#b9d7d9", "#95bcbf", "#73a3a6", "#406b6f"]
 const TEAL, RED = "#4a7b81", "#bd1616"
 const HIST_LIGHT, HIST_DARK = (185, 215, 217), (76, 129, 133)
 
-# plot area [left, right, top, bottom] (mm) and data -> mm mappings mm = c0 + c1*u (u = value or log10 value),
-# measured on the published figure
+# axes boxes (mm) and mappings mm = c0 + c1*u (u = value or log10 value), measured on the published figure
 const AX = (
     a = ((35.27, 79.83, 2.59, 22.05),  (6.98085, 42.6178),     (21.47426, -9.04476), :identity, :identity),
     c = ((95.27, 131.31, 3.19, 27.31), (96.28685, 17.00116),   (15.25, -12.06),      :identity, :identity),
@@ -85,7 +70,7 @@ function fig1(data, out)
     fig = Figure(180, 78.979912)
     embed!(fig, assetsdir("fig1_layout.svg"))
 
-    # a: histogram of s (bins of 0.1, light to dark) and P(s) from the τ(s) fit
+    # a: histogram of s and P(s)
     ax = axes_for(fig, :a)
     edges = collect(0.7:0.1:1.7); edges[end] = 1.7
     counts = [count(v -> (edges[k] <= v < edges[k+1]) || (k == length(edges) - 1 && v == edges[end]), data.s) for k in 1:length(edges)-1]
@@ -112,7 +97,7 @@ function fig1(data, out)
         plot!(ax, t[r .> 0], r[r .> 0]; color=col, width=0.99)
     end
 
-    # e: relaxation times and τ(s) fit (unclipped, as published)
+    # e: τ(s) and its fit
     ax = axes_for(fig, :e)
     for (si, ti) in zip(data.s, data.tau)
         (data.example === nothing ? ti > 0 : inside(ax, si, ti)) && circle!(fig, xmm(ax, si), ymm(ax, ti), 0.3741; fill=TEAL)
@@ -125,20 +110,19 @@ function fig1(data, out)
     plot!(ax, data.pop_t[keep], data.pop[keep]; color=TEAL, width=0.99)
     pp = fit_power_law(data.pop_t, data.pop)
     @printf("power-law fit of ⟨R(t)⟩ (0.07-0.9 s): α = %.5f, γ = %.4f\n", pp[1], -pp[2])
-    t_in = (1 / pp[1])^(1 / pp[2])                       # the dashed line starts where it enters the axes
+    t_in = (1 / pp[1])^(1 / pp[2])
     tf = vcat(t_in, data.pop_t[keep][data.pop_t[keep] .> t_in])
     plot!(ax, tf, pp[1] .* tf .^ pp[2]; color=RED, width=0.99, dash=(7.937, 4.961), cap="round")
 
     return save(fig, out)
 end
 
-# rasters of panel b (RdBu, ±1, every n/100-th unit, unit 1 at the bottom) and the time at which each
-# unit's mean activity drops to 0.4
+# rasters of panel b (generated data)
 function draw_rasters!(fig, data)
     cmap = Plots.cgrad(:RdBu)
     n = size(data.example, 1); units = collect(1:max(1, n ÷ 100):n)
     pixel(v) = (c = cmap[clamp((v + 1) / 2, 0, 1)]; round.(UInt8, 255 .* (Plots.Colors.red(c), Plots.Colors.green(c), Plots.Colors.blue(c))))
-    boxes = ((22.00, 39.20, 28.41, 34.16), (55.09, 39.18, 28.40, 34.14))      # x, y, w, h
+    boxes = ((22.00, 39.20, 28.41, 34.16), (55.09, 39.18, 28.40, 34.14))
     for (M, (x, y, w, h)) in zip((data.example, data.mean_activity), boxes)
         image!(fig, x, y, w, h, png_bytes([pixel(M[u, j]) for u in reverse(units), j in 1:size(M, 2)]))
     end

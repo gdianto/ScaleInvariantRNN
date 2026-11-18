@@ -1,9 +1,5 @@
-# Wisconsin Card Sorting Test solved by a reservoir (Figs. 4-5).
-#
-# Cards have two properties (colour, shape). Each trial shows a central card and two oriented cards; the correct
-# response is the oriented card that shares the property selected by the current rule with the central card.
-# The rule changes at each trial with probability change_prob, and a wrong response triggers an error signal.
-# Requires src/project.jl and src/reservoir.jl. Keep the order of the random draws: seeded results depend on it.
+# Wisconsin Card Sorting Test solved by a reservoir (Figs. 4-5). Requires src/project.jl and src/reservoir.jl.
+# Keep the order of the random draws: seeded results depend on it.
 
 using LinearAlgebra, Random, Statistics, Printf, DelimitedFiles, LsqFit, SparseArrays
 
@@ -21,7 +17,6 @@ function smoothed_square(len, ramp)
     return r
 end
 
-# ------------------------------------------------------------------ task
 "Cards, rules and optimal responses of every trial. `n_values` = number of colours and of shapes."
 function generate_trials(n_values, n_trials, change_prob, error_magnitude)
     central = [[rand(1:n_values[1]), rand(1:n_values[2])] for _ in 1:n_trials]
@@ -136,7 +131,6 @@ function build_input(trials, timing, n_trials, n_learned, n_cards, context_out, 
     return (; input, features, first_step)
 end
 
-# ------------------------------------------------------------------ network
 """
 Dense Gaussian J with spectral radius g and the given self-couplings (vector, or scalar for the τ0-network);
 input weights for the cards, error, [context] and response channels.
@@ -236,7 +230,6 @@ function power_law_test(closed, N, τu, dt; n_starts=100, i0=5)
     return (; t, acf_mean, r, params, i0)
 end
 
-# ------------------------------------------------------------------ runs and result files
 append_row(path, values) = open(io -> println(io, join(map(string, values), " ")), path, "a")
 
 function append_results(path, g_context, accuracy, dJ)
